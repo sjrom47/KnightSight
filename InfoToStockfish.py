@@ -212,11 +212,34 @@ while running:
     board = chess.Board(fen)
     print(board)
 
-    bot1.set_board(board)
-    temp_board = bot1.move()
+    legal_moves = list(board.legal_moves)
 
-    if temp_board is None:
-        break
+    illegal_move = True
+
+    bot1.set_board(board)
+    
+
+    while illegal_move:
+
+        temp_board = bot1.move()
+
+        if temp_board is None:
+            break
+        
+        temp_move_legal = False
+        for move in legal_moves:
+            if move == temp_board.peek():  # Si el movimiento del bot es igual a un movimiento legal
+                temp_move_legal = True
+                break
+
+        if temp_move_legal:
+            illegal_move = False  # El movimiento es legal, así que salimos del bucle
+        else:
+            print("Movimiento ilegal, realice otro movimiento")
+            # Actualiza los movimientos legales después de un movimiento ilegal
+            
+            legal_moves = list(board.legal_moves)
+            
 
     # Obtiene parámetros globales de la partida
     fen = temp_board.fen()
