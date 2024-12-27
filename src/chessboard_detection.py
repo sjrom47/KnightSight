@@ -1,18 +1,12 @@
 import numpy as np
 import copy
-import glob
 import cv2
-import os
 from typing import List, Tuple
 import skimage as ski
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
 import time
-from scipy.spatial.distance import cdist
 from scipy.spatial import cKDTree
-
-# from scipy.spatial import distance
-from sklearn.neighbors import NearestNeighbors
 from utils import load_images, show_image
 
 
@@ -683,7 +677,7 @@ def corner_with_contours(sobel_img):
 
 
 def find_chessboard_corners(
-    img: np.array, sigma=4, threshold=20
+    img: np.array, sigma=4, threshold=20, visualize=False
 ) -> Tuple[np.array, np.array]:
     """
     Apply the whole process of finding the corners of the chessboard. It includes the preprocessing of the image, the corner detection
@@ -693,6 +687,7 @@ def find_chessboard_corners(
         img (np.array): the image to process
         sigma (int, optional): The standard deviation of the gaussian kernel. Defaults to 4.
         threshold (int, optional): the threshold for the binarization. Defaults to 20.
+        visualize (bool, optional): whether to visualize the process. Defaults to False.
 
     Returns:
         Tuple: the corners of the chessboard and the grid of points
@@ -708,7 +703,15 @@ def find_chessboard_corners(
         sobel_img_bgr, 1000, 0.1, 20, (0, 255, 0), 10, return_corners=True
     )
     # show_image(img_shi_tomasi, resize=True)
-    chessboard_corners, grid = get_chessboard_corners(corners_shi_tomasi, img)
+    while True:
+        try:
+            chessboard_corners, grid = get_chessboard_corners(
+                corners_shi_tomasi, img=img if visualize else None
+            )
+            break
+        except np.linalg.LinAlgError:
+            # Sometimes the algorithm doesn't find the grid pattern, so we try again
+            pass
     return chessboard_corners, grid
 
 
