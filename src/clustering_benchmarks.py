@@ -29,8 +29,8 @@ def compute_mean_colors(image, labels):
 
 if __name__ == "__main__":
     # Load the image
-    image = cv2.imread("data/labeled_data/pawn/pawn_001.jpg")
-    # image = cv2.imread("data/other_data/pieces/bishop/bishop_004.jpg")
+    image = cv2.imread("data/labeled_data/knight/knight_001.jpg")
+    # image = cv2.imread("data/other_data/pieces/bishop/bishop_001.jpg")
 
     show_image(image)
 
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     # Benchmark Agglomerative Clustering
     start_time = time.time()
-    agglomerative = AgglomerativeClustering(n_clusters=6, linkage="ward").fit(
+    agglomerative = AgglomerativeClustering(n_clusters=4, linkage="ward").fit(
         reshaped_image
     )
     agglomerative_labels = agglomerative.labels_.reshape(small_image.shape[:2])

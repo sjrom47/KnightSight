@@ -1,54 +1,8 @@
-# import cv2
-# import numpy as np
-# from utils import show_image
-# from sklearn.cluster import DBSCAN
-# import matplotlib.pyplot as plt
-
-
-# def label_to_color_image(label_img):
-#     # Generate a color map
-#     unique_labels = np.unique(label_img)
-#     color_map = plt.cm.get_cmap("hsv", len(unique_labels))
-#     print([color_map(i) for i in range(len(unique_labels))])
-#     print(len(unique_labels))
-#     color_img = np.zeros((label_img.shape[0], label_img.shape[1], 3), dtype=np.uint8)
-
-#     for label in unique_labels:
-#         color = (np.array(color_map(label)[:3]) * 255).astype(np.uint8)
-#         color_img[label_img == label] = color
-
-#     return color_img
-
-
-# if __name__ == "__main__":
-#     # Load the image
-#     image = cv2.imread("data/labeled_data/knight/knight_001.jpg")
-#     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-#     show_image(hsv_image)
-#     small_image = hsv_image
-#     # small_image = cv2.resize(hsv_image, (20, 20), interpolation=cv2.INTER_AREA)
-#     # show_image(small_image)
-#     hue_channel = small_image[:, :, 0]
-#     cluster = DBSCAN(eps=0.5, min_samples=200).fit(hue_channel.reshape(-1, 1))
-#     print(cluster.labels_)
-#     print(cluster.labels_.shape)
-#     labels = cluster.labels_.reshape(hue_channel.shape)
-
-#     # Map labels to colors and show the image
-#     color_cluster_img = label_to_color_image(labels)
-#     # cluster_img = np.zeros_like(hue_channel)
-#     # for i, label in enumerate(cluster.labels_):
-#     #     cluster_img.flat[i] = label
-#     # color_cluster_img = label_to_color_image(cluster_img)
-#     # show_image(cluster_img)
-#     color_cluster_img_bgr = cv2.cvtColor(color_cluster_img, cv2.COLOR_RGB2BGR)
-#     show_image(color_cluster_img_bgr)
 import cv2
 import numpy as np
 from utils import show_image, load_images
 from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 import matplotlib.pyplot as plt
-from sklearn.mixture import GaussianMixture
 
 
 def label_to_color_image(label_img, mean_colors):
@@ -72,14 +26,20 @@ def compute_mean_colors(image, labels):
 
 if __name__ == "__main__":
     # Load the image
-    imgs = load_images("data/labeled_data/bishop/*.jpg")
+    # imgs = load_images("data/labeled_data/pawn/*.jpg")
+    imgs = load_images("data/other_data/pieces/*/*.jpg")
     centroid_list = []
     blue_centroid_list = []
     yellow_centroid_list = []
-    for img in imgs[:16]:
+    real_colour_values = []
+    mean_rgb_values = []
+    yellow_mean_rgb_values = []
+    blue_mean_rgb_values = []
+    for img in imgs:
         small_image = cv2.resize(img, (20, 20), interpolation=cv2.INTER_AREA)
+        mean_rgb_values.append(np.mean(small_image, axis=(0, 1)))
         reshaped_image = small_image.reshape(-1, 3)
-        agglomerative = AgglomerativeClustering(n_clusters=3, linkage="ward").fit(
+        agglomerative = AgglomerativeClustering(n_clusters=4, linkage="ward").fit(
             reshaped_image
         )
         agglomerative_labels = agglomerative.labels_.reshape(small_image.shape[:2])
@@ -90,8 +50,10 @@ if __name__ == "__main__":
         key = cv2.waitKey(0)
         if key == ord("b"):
             blue_centroid_list.extend(agglomerative_mean_colors)
+            blue_mean_rgb_values.append(np.mean(small_image, axis=(0, 1)))
         elif key == ord("y"):
             yellow_centroid_list.extend(agglomerative_mean_colors)
+            yellow_mean_rgb_values.append(np.mean(small_image, axis=(0, 1)))
         centroid_list.extend(agglomerative_mean_colors)
         cv2.destroyAllWindows()
     centroid_list = np.array(centroid_list)
@@ -106,6 +68,7 @@ if __name__ == "__main__":
     yellow_centroid_list = cv2.cvtColor(
         yellow_centroid_list.reshape(-1, 1, 3).astype(np.uint8), cv2.COLOR_BGR2HSV
     ).reshape(-1, 3)
+
     fig = plt.figure()
     ax = fig.add_subplot(projection="3d")
     ax.scatter(
@@ -135,6 +98,41 @@ if __name__ == "__main__":
         yellow_centroid_list[:, 2],
         color="yellow",
         label="Yellow",
+    )
+    ax.set_xlabel("Red")
+    ax.set_ylabel("Green")
+    ax.set_zlabel("Blue")
+    plt.legend()
+    plt.show()
+    mean_rgb_values = np.array(mean_rgb_values)
+    fig = plt.figure()
+    ax = fig.add_subplot(projection="3d")
+    ax.scatter(
+        mean_rgb_values[:, 0],
+        mean_rgb_values[:, 1],
+        mean_rgb_values[:, 2],
+        color=mean_rgb_values / 255.0,
+    )
+    ax.set_xlabel("Red")
+    ax.set_ylabel("Green")
+    ax.set_zlabel("Blue")
+    plt.legend()
+    plt.show()
+    yellow_mean_rgb_values = np.array(yellow_mean_rgb_values)
+    blue_mean_rgb_values = np.array(blue_mean_rgb_values)
+    fig = plt.figure()
+    ax = fig.add_subplot(projection="3d")
+    ax.scatter(
+        blue_mean_rgb_values[:, 0],
+        blue_mean_rgb_values[:, 1],
+        blue_mean_rgb_values[:, 2],
+        color="blue",
+    )
+    ax.scatter(
+        yellow_mean_rgb_values[:, 0],
+        yellow_mean_rgb_values[:, 1],
+        yellow_mean_rgb_values[:, 2],
+        color="yellow",
     )
     ax.set_xlabel("Red")
     ax.set_ylabel("Green")
