@@ -30,9 +30,7 @@ def create_bow(
     bow = BoW()
     bow.build_vocabulary(training_set, feature_extractor, vocabulary_size, iterations)
     if save:
-        bow.save_vocabulary(
-            f"{CLASSIFIER_DIR}/vocabulary_{feature_extractor}_{vocabulary_size}.pkl"
-        )
+        bow.save_vocabulary(f"{CLASSIFIER_DIR}/vocabulary")
     return bow
 
 
@@ -41,7 +39,7 @@ def train_classifier(bow, training_set, iterations=100, save=False):
     # Especify the args for the training method
     image_classifier.train(training_set, iterations=iterations)
     if save:
-        image_classifier.save(f"{CLASSIFIER_DIR}/classifier.pkl")
+        image_classifier.save(f"{CLASSIFIER_DIR}/classifier")
     return image_classifier
 
 
@@ -75,7 +73,7 @@ def create_bow_and_train(
     train_predict(image_classifier, training_set)
     if validation_set:
         accuracy, _, _ = test_predict(image_classifier, validation_set)
-    return accuracy
+        return accuracy
 
 
 def cross_validation(dataset_path, cv_params):
@@ -99,3 +97,9 @@ def cross_validation(dataset_path, cv_params):
 if __name__ == "__main__":
     training_set, validation_set = load_dataset(DATASET_DIR)
     create_bow_and_train(training_set, validation_set)
+    cv_params = {
+        "vocabulary_size": [50, 100, 200],
+        "iterations": [50, 100, 200],
+        "feature_extractor": ["SIFT", "KAZE"],
+    }
+    cross_validation(DATASET_DIR, cv_params)

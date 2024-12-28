@@ -109,7 +109,7 @@ class ImageClassifier:
         )
 
     def predict(
-        self, dataset: List[str], dataset_name: str = "", save: bool = True
+        self, dataset: List[str], dataset_name: str = "", save: bool = False
     ) -> Tuple[float, np.ndarray, List[Tuple[str, str, str]]]:
         """Evaluates a new set of images using the trained classifier.
 

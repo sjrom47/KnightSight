@@ -8,6 +8,7 @@ from scipy.spatial import Delaunay
 import time
 from scipy.spatial import cKDTree
 from utils import load_images, show_image
+import cProfile
 
 
 def blur_images(imgs: List, sigma: float) -> List:
@@ -605,9 +606,15 @@ def sobel_processing(img: np.array, threshold=20) -> np.array:
         np.array: the preprocessed image
     """
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    sobel_img = cv2.normalize(
-        ski.filters.sobel(gray_img), None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U
-    )
+    #! This is the scikit-image implementation of the Sobel operator. It is slower than the OpenCV implementation
+    #! However, it hasnt been as thoroughly tested as the OpenCV implementation.
+    # sobel_img = cv2.normalize(
+    #     ski.filters.sobel(gray_img), None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U
+    # )
+    sobelx = cv2.Sobel(gray_img, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(gray_img, cv2.CV_64F, 0, 1, ksize=3)
+    sobel_img = cv2.magnitude(sobelx, sobely)
+    sobel_img = cv2.normalize(sobel_img, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
 
     sobel_img = cv2.morphologyEx(sobel_img, cv2.MORPH_CLOSE, None)
 
@@ -717,11 +724,16 @@ def find_chessboard_corners(
 
 if __name__ == "__main__":
     imgs = load_images("./data/photos/test*.jpg")
+    imgs_shape = [(img.shape[0], img.shape[1]) for img in imgs]
+    resized_imgs = [
+        cv2.resize(img, (shape[1] // 2, shape[0] // 2))
+        for img, shape in zip(imgs, imgs_shape)
+    ]
     sigma = 4
     t0 = time.time()
     blurred_imgs = blur_images(imgs, sigma)
     print(f"Blurring took {time.time() - t0:.3f} s")
-    img = blurred_imgs[-1]
+    img = blurred_imgs[0].copy()
     img_shape = (img.shape[1] // 2, img.shape[0] // 2)
     img = cv2.resize(img, img_shape, interpolation=cv2.INTER_AREA)
     t0 = time.time()
@@ -768,13 +780,12 @@ if __name__ == "__main__":
         cv2.circle(final_img, [int(i) for i in corner], 15, (0, 0, 255), -1)
     show_image(final_img, resize=True)
     t0 = time.time()
-    chessboard_corners, grid = find_chessboard_corners(imgs[0])
+    chessboard_corners, grid = find_chessboard_corners(imgs[0], sigma=3)
     t1 = time.time()
     print(f"Whole process took {t1-t0:.3f} s")
-    final_img = copy.deepcopy(img)
+    final_img = copy.deepcopy(imgs[0])
     for corner in chessboard_corners:
         cv2.circle(final_img, [int(i) for i in corner], 15, (0, 0, 255), -1)
     show_image(final_img, resize=True)
-    # import cProfile
 
-    # cProfile.run("find_chessboard_corners(imgs[-1])")
+    cProfile.run("find_chessboard_corners(resized_imgs[-1], sigma = 2)")
