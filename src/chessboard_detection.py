@@ -453,7 +453,6 @@ def regression_vector(points: np.ndarray) -> np.ndarray:
     if np.linalg.matrix_rank(X) < 2:
         X[0, 1] += 0.25
     y = np.array([point[1] for point in points])
-    print("X", X, "y", y)
     # We use the closed form solution to find the parameters of the regression line
     w = np.linalg.inv(X.T @ X) @ X.T @ y.T
     return w
@@ -745,10 +744,13 @@ def find_chessboard_corners(
             zeroZone=(-1, -1),
             criteria=criteria,
         )
-
-        chessboard_corners, grid = get_chessboard_corners(
-            corners_shi_tomasi, img=img if visualize else None
-        )
+        for _ in range(10):
+            try:
+                chessboard_corners, grid = get_chessboard_corners(
+                    corners_shi_tomasi, img=img if visualize else None
+                )
+            except:
+                pass
 
     except:
         harris_img = cv2.cornerHarris(sobel_img, 3, 3, 0.06)
