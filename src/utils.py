@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 from typing import List
 import glob
+import os
 
 
 def non_max_suppression(img, theta):
@@ -158,3 +159,42 @@ def load_images(path: str) -> List:
     paths_to_images = glob.glob(path)
     imgs = opencv_load_images(paths_to_images)
     return imgs
+
+
+def load_video(path: str) -> np.array:
+    """
+    Loads a video from a given path.
+
+    Args:
+        path (str): The path to the video.
+
+    Returns:
+        np.array: The video.
+    """
+    print(path)
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error: Could not open the video file")
+    frames = []
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)
+    cap.release()
+    return frames
+
+
+def save_image(img: np.array, path: str, img_name: str) -> None:
+    """
+    Save an image to a given path.
+
+    Args:
+        img (np.array): The image to save.
+        path (str): The path to save the image.
+        img_name (str): The name of the image.
+    """
+    print(path)
+    os.makedirs(path, exist_ok=True)
+    cv2.imwrite(path + img_name + ".jpg", img)
+    print(f"Image saved to {path}")
