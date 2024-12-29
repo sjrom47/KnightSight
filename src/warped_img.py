@@ -17,7 +17,7 @@ def warp_chessboard_image(img: np.array, grid: List, grid_size=(8, 8)) -> np.arr
         ((grid_size[0] + 1) * 100, (grid_size[1] + 1) * 100),
         flags=cv2.INTER_LINEAR,
     )
-    return warped
+    return warped, M
 
 
 def unwarp_points(points: np.array, homography_matrix: np.array) -> np.array:
