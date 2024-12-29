@@ -1,15 +1,7 @@
-import glob
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
 from utils import *
 from bow import BoW
 from dataset import Dataset
 from image_classifier import ImageClassifier
-import time
-from tqdm import tqdm
-import sys
-import pickle
 import itertools
 from config import *
 

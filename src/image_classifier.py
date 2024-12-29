@@ -5,7 +5,6 @@ import sys
 import time
 from tqdm import tqdm  # Progress bar
 from typing import List, Tuple
-
 from bow import BoW
 from dataset import Dataset
 from results import Results

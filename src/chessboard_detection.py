@@ -557,7 +557,7 @@ def RANSAC_corners(corners: np.array, tree: cKDTree) -> Tuple[np.array, np.array
 
     tri = Delaunay(corners)
     triangles = corners[tri.simplices]
-    threshold = 0.085
+    threshold = 0.1
     best_triangle = None
     best_matching_points = None
     max_hits = 0
@@ -592,7 +592,7 @@ def RANSAC_corners(corners: np.array, tree: cKDTree) -> Tuple[np.array, np.array
     return None, None
 
 
-def sobel_processing(img: np.array, threshold=20) -> np.array:
+def sobel_processing(img: np.array, threshold=20, sigma=3) -> np.array:
     """
     Preprocessing of the image to make the corner detection more robust. We use the Sobel operator to find the edges of the image
     and then we apply some morphological operations to close the gaps in the edges. In our data Sobel worked better than Canny.
@@ -620,9 +620,11 @@ def sobel_processing(img: np.array, threshold=20) -> np.array:
 
     _, binary_sobel_img = cv2.threshold(sobel_img, threshold, 255, cv2.THRESH_BINARY)
 
-    sobel_img = cv2.GaussianBlur(binary_sobel_img, (0, 0), 3)
+    # show_image(cv2.cvtColor(binary_sobel_img, cv2.COLOR_GRAY2BGR), resize=True)
+
+    sobel_img = cv2.GaussianBlur(binary_sobel_img, (0, 0), sigma)
     sobel_img = abs(255 - sobel_img)
-    dilations = 5
+    dilations = round(sigma * 2)
     for _ in range(dilations):
         sobel_img = cv2.dilate(sobel_img, None)
 
@@ -703,22 +705,60 @@ def find_chessboard_corners(
     img = blurred_imgs[0]
     # img_shape = (img.shape[1] // 2, img.shape[0] // 2)
     # img = cv2.resize(img, img_shape, interpolation=cv2.INTER_AREA)
-    sobel_img = sobel_processing(img, threshold)
+    sobel_img = sobel_processing(img, threshold, sigma)
     sobel_img_bgr = cv2.cvtColor(sobel_img, cv2.COLOR_GRAY2BGR)
-
-    _, corners_shi_tomasi = shi_tomasi_corner_detection(
-        sobel_img_bgr, 1000, 0.1, 20, (0, 255, 0), 10, return_corners=True
-    )
-    # show_image(img_shi_tomasi, resize=True)
-    while True:
-        try:
-            chessboard_corners, grid = get_chessboard_corners(
-                corners_shi_tomasi, img=img if visualize else None
-            )
-            break
-        except np.linalg.LinAlgError:
-            # Sometimes the algorithm doesn't find the grid pattern, so we try again
-            pass
+    # show_image(sobel_img, resize=True)
+    try:
+        img_shi_tomasi, corners_shi_tomasi = shi_tomasi_corner_detection(
+            sobel_img_bgr,
+            1000,
+            0.1,
+            min(sobel_img.shape) // 200,
+            (0, 255, 0),
+            10,
+            return_corners=True,
+        )
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.01)
+        corners_shi_tomasi = cv2.cornerSubPix(
+            sobel_img,
+            corners_shi_tomasi,
+            winSize=(5, 5),
+            zeroZone=(-1, -1),
+            criteria=criteria,
+        )
+        # show_image(img_shi_tomasi, resize=True)
+        while True:
+            try:
+                chessboard_corners, grid = get_chessboard_corners(
+                    corners_shi_tomasi, img=img if visualize else None
+                )
+                break
+            except np.linalg.LinAlgError:
+                # Sometimes the algorithm doesn't find the grid pattern, so we try again
+                pass
+    except Exception as e:
+        print(e)
+        draw_image = sobel_img_bgr.copy()
+        harris_img = cv2.cornerHarris(sobel_img, 3, 3, 0.06)
+        # harris_img = cv2.dilate(harris_img, None)
+        print(harris_img.max())
+        threshold = 0.1 * harris_img.max()
+        draw_image[harris_img > threshold] = [0, 0, 255]
+        show_image(draw_image, resize=True)
+        corner_coords = np.argwhere(harris_img > threshold)
+        corner_coords = np.array([[y, x] for [x, y] in corner_coords])
+        for corner in corner_coords:
+            cv2.circle(draw_image, tuple(corner), 10, (0, 0, 255), -1)
+        show_image(draw_image, resize=True)
+        while True:
+            try:
+                chessboard_corners, grid = get_chessboard_corners(
+                    corner_coords, img=img if visualize else None
+                )
+                break
+            except np.linalg.LinAlgError:
+                # Sometimes the algorithm doesn't find the grid pattern, so we try again
+                pass
     return chessboard_corners, grid
 
 

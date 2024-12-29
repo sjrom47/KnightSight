@@ -1,5 +1,3 @@
-import cv2
-import numpy as np
 from image_classifier import ImageClassifier
 from bow import BoW
 from config import *
@@ -7,11 +5,16 @@ from color_classifier import ColorClassifier
 
 
 class ChessPieceClassifier:
-    def __init__(self, classifier_path=CLASSIFIER_DIR):
-        bow = BoW.load(f"{classifier_path}/vocabulary")
-        self._color_classifier = ColorClassifier()
+    def __init__(
+        self,
+        piece_classifier_path=CLASSIFIER_DIR,
+        color_classifier_path=COLOR_CLASSIFIER_DIR,
+    ):
+        bow = BoW.load(f"{piece_classifier_path}/vocabulary")
         self._piece_classifier = ImageClassifier(bow)
-        self._piece_classifier.load(f"{classifier_path}/classifier")
+        self._piece_classifier.load(f"{piece_classifier_path}/classifier")
+        self._color_classifier = ColorClassifier()
+        self._color_classifier.load(f"{color_classifier_path}/color_classifier")
 
     @property
     def piece_classifier(self):

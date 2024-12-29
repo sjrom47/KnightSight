@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 import pickle
 import sys
 import time
@@ -59,7 +58,11 @@ class BoW:
         print("\nBUILDING DICTIONARY")
 
         self._initialize_feature_extractor(feature_type)
-        termination_criteria = (cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, iterations, epsilon)
+        termination_criteria = (
+            cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS,
+            iterations,
+            epsilon,
+        )
         words = cv2.BOWKMeansTrainer(vocabulary_size, termination_criteria)
 
         # Extract features
@@ -78,7 +81,9 @@ class BoW:
 
         # Build vocabulary
         time.sleep(0.1)  # Prevents a race condition between tqdm and print statements.
-        print("\nClustering descriptors into", vocabulary_size, "words using K-means...")
+        print(
+            "\nClustering descriptors into", vocabulary_size, "words using K-means..."
+        )
 
         self._vocabulary = words.cluster()
 
@@ -102,7 +107,9 @@ class BoW:
 
         """
         with open(filename + ".pickle", "wb") as f:
-            pickle.dump([self._feature_type, self._vocabulary], f, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(
+                [self._feature_type, self._vocabulary], f, pickle.HIGHEST_PROTOCOL
+            )
 
     def _initialize_feature_extractor(self, feature_type: str):
         """Initializes the feature extractor.
@@ -119,6 +126,8 @@ class BoW:
         elif feature_type == "KAZE":
             self._feature_extractor = cv2.KAZE_create()
         else:
-            raise ValueError("Feature type not supported. Possible values are 'SIFT' and 'KAZE'.")
+            raise ValueError(
+                "Feature type not supported. Possible values are 'SIFT' and 'KAZE'."
+            )
 
         self._feature_type = feature_type

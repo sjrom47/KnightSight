@@ -161,6 +161,30 @@ def load_images(path: str) -> List:
     return imgs
 
 
+def load_video(path: str) -> np.array:
+    """
+    Loads a video from a given path.
+
+    Args:
+        path (str): The path to the video.
+
+    Returns:
+        np.array: The video.
+    """
+    print(path)
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        print("Error: Could not open the video file")
+    frames = []
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)
+    cap.release()
+    return frames
+
+
 def save_image(img: np.array, path: str, img_name: str) -> None:
     """
     Save an image to a given path.

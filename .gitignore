@@ -164,5 +164,7 @@ cython_debug/
 other_data/
 calibration_photos/
 labeled_data/
+color_labels/
 unlabeled_data/
 classifier/
+color_classifier/

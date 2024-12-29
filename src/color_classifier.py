@@ -1,29 +1,39 @@
-import cv2
 import numpy as np
-from utils import show_image, load_images
-from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
-import matplotlib.pyplot as plt
 from sklearn.svm import LinearSVC
+import pickle
+from config import *
 
 
 class ColorClassifier:
     def __init__(self):
-        self.model = LinearSVC()
-        self._yellow_mean_rgb_values = []
-        self._blue_mean_rgb_values = []
+        self._model = LinearSVC()
+        self._white_mean_rgb_values = []
+        self._black_mean_rgb_values = []
 
-    def add_yellow_mean_rgb_value(self, value):
-        self._yellow_mean_rgb_values.append(value)
+    def add_white_mean_rgb_value(self, value):
+        self._white_mean_rgb_values.append(value)
 
-    def add_blue_mean_rgb_value(self, value):
-        self._blue_mean_rgb_values.append(value)
+    def add_black_mean_rgb_value(self, value):
+        self._black_mean_rgb_values.append(value)
 
     def train(self):
-        X = self._yellow_mean_rgb_values + self._blue_mean_rgb_values
-        y = [0] * len(self._yellow_mean_rgb_values) + [1] * len(
-            self._blue_mean_rgb_values
+        X = np.array(self._white_mean_rgb_values + self._black_mean_rgb_values).reshape(
+            -1, 1
         )
-        self.model.fit(X, y)
+        y = np.array(
+            [0] * len(self._white_mean_rgb_values)
+            + [1] * len(self._black_mean_rgb_values)
+        )
+
+        self._model.fit(X, y)
 
     def predict(self, value):
-        return self.model.predict([value])
+        return self._model.predict([value])
+
+    def save(self, filename, path=COLOR_CLASSIFIER_DIR):
+        with open(f"{path}/{filename}.pickle", "wb") as f:
+            pickle.dump(self._model, f)
+
+    def load(self, filename):
+        with open(filename, "rb") as f:
+            self._model = pickle.load(f)

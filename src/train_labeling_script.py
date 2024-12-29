@@ -1,4 +1,3 @@
-import glob
 from chessboard_detection import find_chessboard_corners
 from warped_img import warp_chessboard_image
 from typing import List, Tuple
