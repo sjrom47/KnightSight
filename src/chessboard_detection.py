@@ -260,7 +260,7 @@ def expand_square_grid(initial_square, grid, corners, tree, board_size, img=None
         and len(initial_square["left"]) == board_size[1] + 1
     ):
         return initial_square, grid
-    threshold = 0.075
+    threshold = 0.085
     sides_order = ["up", "left", "down", "right"]
     new_square = {"up": [], "down": [], "left": [], "right": []}
 
@@ -294,40 +294,61 @@ def expand_square_grid(initial_square, grid, corners, tree, board_size, img=None
             len(initial_square[x]),
         ),
     )
-    # chosen_side_value = len(new_square[chosen_side]) / len(initial_square[chosen_side])
+    chosen_side_value = len(new_square[chosen_side]) / len(initial_square[chosen_side])
 
-    # if chosen_side_value < 1:
-
-    chosen_side_vector = regression_vector(np.array(new_square[chosen_side]))
-    other_vector = regression_vector(np.array(initial_square[chosen_side]))
-    if angle_between_lines(chosen_side_vector, other_vector) > 0.025:
-        median_point = np.median(new_square[chosen_side], axis=0)
-        chosen_side_vector = np.array(
-            [
-                np.dot(
-                    np.array([-other_vector[1], 1]),
-                    np.array([median_point[0], median_point[1]]),
-                ),
-                other_vector[1],
+    if chosen_side_value < 1:
+        if len(new_square[chosen_side]) == 0:
+            new_square[chosen_side] = [
+                initial_square[chosen_side][0] + get_vector(side, 0, grid),
+                initial_square[chosen_side][-1]
+                + get_vector(side, len(initial_square[chosen_side]) - 1, grid),
             ]
-        )
+        other_vector = regression_vector(np.array(initial_square[chosen_side]))
+        if len(new_square[chosen_side]) > 1:
+            chosen_side_vector = regression_vector(np.array(new_square[chosen_side]))
+        else:
+            chosen_side_vector = np.array(
+                [
+                    np.dot(
+                        np.array([-other_vector[1], 1]),
+                        np.array(
+                            [
+                                new_square[chosen_side][0][0],
+                                new_square[chosen_side][0][1],
+                            ]
+                        ),
+                    ),
+                    other_vector[1],
+                ]
+            )
+        if angle_between_lines(chosen_side_vector, other_vector) > 0.025:
+            median_point = np.median(new_square[chosen_side], axis=0)
+            chosen_side_vector = np.array(
+                [
+                    np.dot(
+                        np.array([-other_vector[1], 1]),
+                        np.array([median_point[0], median_point[1]]),
+                    ),
+                    other_vector[1],
+                ]
+            )
 
-    new_square[chosen_side] = [
-        (
-            corners[
-                tree.query_ball_point(
+        new_square[chosen_side] = [
+            (
+                corners[
+                    tree.query_ball_point(
+                        vertex + get_vector(chosen_side, i, grid),
+                        threshold * np.linalg.norm(get_vector(chosen_side, i, grid)),
+                    )[0]
+                ]
+                if tree.query_ball_point(
                     vertex + get_vector(chosen_side, i, grid),
                     threshold * np.linalg.norm(get_vector(chosen_side, i, grid)),
-                )[0]
-            ]
-            if tree.query_ball_point(
-                vertex + get_vector(chosen_side, i, grid),
-                threshold * np.linalg.norm(get_vector(chosen_side, i, grid)),
+                )
+                else get_approx_points(chosen_side, i, grid, chosen_side_vector)
             )
-            else get_approx_points(chosen_side, i, grid, chosen_side_vector)
-        )
-        for i, vertex in enumerate(initial_square[chosen_side])
-    ]
+            for i, vertex in enumerate(initial_square[chosen_side])
+        ]
 
     chosen_side_index = sides_order.index(chosen_side)
     initial_square[chosen_side] = new_square[chosen_side].copy()
@@ -454,6 +475,8 @@ def regression_vector(points: np.ndarray) -> np.ndarray:
         X[0, 1] += 0.25
     y = np.array([point[1] for point in points])
     # We use the closed form solution to find the parameters of the regression line
+    # print(X, y)
+    # print(X.T @ X)
     w = np.linalg.inv(X.T @ X) @ X.T @ y.T
     return w
 
@@ -749,8 +772,9 @@ def find_chessboard_corners(
                 chessboard_corners, grid = get_chessboard_corners(
                     corners_shi_tomasi, img=img if visualize else None
                 )
-            except:
-                pass
+            except Exception as e:
+                print(e)
+                print("Retrying...")
 
     except:
         harris_img = cv2.cornerHarris(sobel_img, 3, 3, 0.06)
@@ -778,11 +802,11 @@ if __name__ == "__main__":
         cv2.resize(img, (shape[1] // 2, shape[0] // 2))
         for img, shape in zip(imgs, imgs_shape)
     ]
-    sigma = 4
+    sigma = 5
     t0 = time.time()
     blurred_imgs = blur_images(imgs, sigma)
     print(f"Blurring took {time.time() - t0:.3f} s")
-    img = blurred_imgs[0].copy()
+    img = blurred_imgs[-1].copy()
     img_shape = (img.shape[1] // 2, img.shape[0] // 2)
     img = cv2.resize(img, img_shape, interpolation=cv2.INTER_AREA)
     t0 = time.time()
