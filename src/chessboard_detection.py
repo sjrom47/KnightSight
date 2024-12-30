@@ -192,6 +192,7 @@ def get_chessboard_corners(corners: np.array, img=None) -> Tuple[np.array, np.ar
     chessboard_corners, grid = detect_chessboard_corners(
         initial_triangle, corners, img, tree
     )
+    grid, chessboard_corners = orient_chessboard(grid, chessboard_corners)
     up_points = chessboard_corners.get("up", [])
     right_points = chessboard_corners.get("right", [])
     down_points = chessboard_corners.get("down", [])
@@ -400,7 +401,9 @@ def get_approx_points(side, index, grid, new_side_vector):
         np.array: The approximated point
     """
     points = get_points_side_index(side, index, grid)
+
     vector = regression_vector(points)
+
     approx_point = line_intersection(vector, new_side_vector)
 
     return approx_point
@@ -441,15 +444,15 @@ def get_points_side_index(side: str, index: int, grid: np.array) -> np.array:
 #     )
 
 
-def remove_duplicates(arr):
-    seen = set()
-    epsilon = 0.25  # Small value to add to duplicates
-    for i in range(len(arr)):
-        while arr[i] in seen:
-            arr[i] += epsilon
-            # epsilon *= 2
-        seen.add(arr[i])
-    return arr
+# def remove_duplicates(arr):
+#     seen = set()
+#     epsilon = 0.5  # Small value to add to duplicates
+#     for i in range(len(arr)):
+#         while arr[i] in seen:
+#             arr[i] += epsilon
+#         epsilon *= -1
+#         seen.add(arr[i])
+#     return arr
 
 
 def regression_vector(points: np.ndarray) -> np.ndarray:
@@ -462,22 +465,30 @@ def regression_vector(points: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: The parameters of the regression line.
     """
-    x_point_list = [point[0] for point in points]
-    if len(set(x_point_list)) != len(x_point_list):
-        x_point_list = remove_duplicates(x_point_list)
+    swap = False
+    x_point_list = [point[0] for point in points].copy()
+    y_point_list = [point[1] for point in points].copy()
+    if np.std(x_point_list) < np.std(y_point_list):
+        x_point_list, y_point_list = y_point_list, x_point_list
+        swap = True
+    # if len(set(x_point_list)) != len(x_point_list):
+    #     x_point_list = remove_duplicates(x_point_list)
     X = np.hstack(
         (
             np.ones(points.shape[0]).reshape(-1, 1),
             (np.array(x_point_list).reshape(-1, 1)),
         )
     )
-    if np.linalg.matrix_rank(X) < 2:
-        X[0, 1] += 0.25
-    y = np.array([point[1] for point in points])
+    # if np.linalg.matrix_rank(X) < 2:
+    #     X[0, 1] += 0.25
+    y = np.array(y_point_list)
     # We use the closed form solution to find the parameters of the regression line
     # print(X, y)
     # print(X.T @ X)
     w = np.linalg.inv(X.T @ X) @ X.T @ y.T
+    if swap:
+        w = np.array([-w[0] / w[1], 1 / w[1]])
+
     return w
 
 
@@ -724,6 +735,45 @@ def corner_with_contours(sobel_img):
         final_corners.append(center)
     final_corners = np.array(final_corners, dtype=np.float32).reshape(-1, 1, 2)
     return final_corners
+
+
+def orient_chessboard(grid, chessboard_corners):
+    # Determine the correct orientation by checking the relative positions of the corners
+    top_left = chessboard_corners["left"][0]
+    top_right = chessboard_corners["up"][0]
+    bottom_left = chessboard_corners["down"][0]
+    bottom_right = chessboard_corners["right"][0]
+    corners = [top_left, top_right, bottom_left, bottom_right]
+    min_corner = min(corners, key=lambda x: np.linalg.norm(x))
+    if min_corner is bottom_left:
+        # Rotate grid 90 degrees clockwise
+        grid = np.rot90(grid, k=3)
+        chessboard_corners = {
+            "up": chessboard_corners["left"],
+            "right": chessboard_corners["up"],
+            "down": chessboard_corners["right"],
+            "left": chessboard_corners["down"],
+        }
+    elif min_corner is bottom_right:
+        # Rotate grid 180 degrees
+        grid = np.rot90(grid, k=2)
+        chessboard_corners = {
+            "up": chessboard_corners["down"],
+            "right": chessboard_corners["left"],
+            "down": chessboard_corners["up"],
+            "left": chessboard_corners["right"],
+        }
+    elif min_corner is top_right:
+        # Rotate grid 90 degrees counterclockwise
+        grid = np.rot90(grid, k=1)
+        chessboard_corners = {
+            "up": chessboard_corners["right"],
+            "right": chessboard_corners["down"],
+            "down": chessboard_corners["left"],
+            "left": chessboard_corners["up"],
+        }
+
+    return grid, chessboard_corners
 
 
 def find_chessboard_corners(

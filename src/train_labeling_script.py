@@ -6,21 +6,7 @@ import cv2
 from config import *
 import os
 import time
-
-
-def split_image_into_squares(warped_img, grid_size=(8, 8)) -> List:
-    """
-    Split the warped image into squares
-    """
-    squares = []
-    for i in range(grid_size[0]):
-        for j in range(grid_size[1]):
-            x = i * 100 + 50
-            y = j * 100 + 50
-            square = warped_img[y : y + 100, x : x + 100]
-
-            squares.append(square)
-    return squares
+from utils import split_image_into_squares
 
 
 def show_image_to_label(image):

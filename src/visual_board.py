@@ -2,7 +2,10 @@ from config import *
 
 
 class VisualBoard:
-    def __init__(self, state):
+    def __init__(self, state=None):
+        self._state = state
+
+    def set_initial_state(self, state):
         self._state = state
 
     @property

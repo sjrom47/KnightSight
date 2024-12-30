@@ -31,7 +31,8 @@ class ChessPieceClassifier:
         if len(image.shape) == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         regions, _ = self._mser.detectRegions(image)
-        if len(regions) < 3:
+        print(len(regions))
+        if len(regions) < 5:
             return (0, None)
         return (self.classify_piece(image), self.classify_color(image))
 

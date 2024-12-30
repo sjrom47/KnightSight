@@ -123,6 +123,23 @@ def get_hsv_color_ranges(image: np.array):
     cv2.destroyAllWindows()
 
 
+def split_image_into_squares(
+    warped_img, grid_size=(8, 8), margin=50, square_size=100
+) -> List:
+    """
+    Split the warped image into squares
+    """
+    squares = []
+    for i in range(grid_size[0]):
+        for j in range(grid_size[1]):
+            x = i * square_size + margin
+            y = j * square_size + margin
+            square = warped_img[y : y + square_size, x : x + square_size]
+
+            squares.append(square)
+    return squares
+
+
 def opencv_load_images(filenames: List) -> List:
     """
     Load images cv2.imread function (BGR)
