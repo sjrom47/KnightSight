@@ -58,8 +58,9 @@ def label_image_set(image_dir: str, grid_size: Tuple) -> List:
         # ? See if resizing is beneficial or not
         image_shape = (image.shape[1] // 2, image.shape[0] // 2)
         image = cv2.resize(image, image_shape, interpolation=cv2.INTER_AREA)
+        # show_image(image, resize=True)
         _, grid = find_chessboard_corners(image, sigma=2)
-        warped_img = warp_chessboard_image(image, grid, grid_size)
+        warped_img, _ = warp_chessboard_image(image, grid, grid_size)
         show_image(warped_img, resize=True)
         squares = split_image_into_squares(warped_img, grid_size)
         for square in squares:

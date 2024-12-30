@@ -772,6 +772,7 @@ def find_chessboard_corners(
                 chessboard_corners, grid = get_chessboard_corners(
                     corners_shi_tomasi, img=img if visualize else None
                 )
+                break
             except Exception as e:
                 print(e)
                 print("Retrying...")

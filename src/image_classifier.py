@@ -154,6 +154,17 @@ class ImageClassifier:
 
         return accuracy, confusion_matrix, classification
 
+    def predict_single(self, image: np.array) -> int:
+        features = self._dictionary.compute(
+            image, self._bow.feature_extractor.detect(image)
+        )
+        if features is not None:
+            features = np.array(features, np.float32).reshape(1, -1)
+            predicted_label = self._classifier.predict(features)[1].ravel().tolist()[0]
+            return int(predicted_label)
+        else:
+            raise ValueError("No features detected in the image.")
+
     def load(self, filename: str):
         """Loads a trained SVM model and the corresponding category labels.
 

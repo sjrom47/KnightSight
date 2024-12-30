@@ -34,6 +34,9 @@ class ColorClassifier:
         with open(f"{path}/{filename}.pickle", "wb") as f:
             pickle.dump(self._model, f)
 
-    def load(self, filename):
-        with open(filename, "rb") as f:
+    def load(
+        self,
+        filename,
+    ):
+        with open(f"{filename}.pickle", "rb") as f:
             self._model = pickle.load(f)

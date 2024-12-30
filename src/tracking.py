@@ -31,7 +31,7 @@ class Tracker:
         frame_copy = frame.copy()
         gray_frame = cv2.cvtColor(frame_copy, cv2.COLOR_BGR2GRAY)
         self._earlier_frame = gray_frame
-        self._earlier_corners = corners
+        self._earlier_corners = np.float32(corners).reshape(-1, 1, 2)
 
     def track(self, frame):
         current_frame = frame.copy()
