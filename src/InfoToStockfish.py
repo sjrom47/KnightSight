@@ -1,6 +1,7 @@
 from stockfish import Stockfish
 import chess
 
+
 class ChessBot:
     """
     A ChessBot class that uses the Stockfish chess engine to make moves based on the current board state.
@@ -16,11 +17,11 @@ class ChessBot:
     -------
     __init__(stockfish_path: str, depth: int = 20, elo_rating: int = -1)
         Initializes the ChessBot instance with a Stockfish engine, board, depth, and optional ELO rating.
-    
+
     move() -> chess.Board or None
         Executes the best move according to Stockfish and updates the board. Returns the updated board state if a move
         is possible; otherwise, returns None.
-    
+
     set_board(board: chess.Board)
         Sets the current board state for the bot to the specified `board`.
     """
@@ -92,9 +93,11 @@ class ChessBot:
             - halfmove: Contador de medio movimientos desde la última captura o movimiento de peón.
             - fullmove: Número de movimientos completos en la partida.
         """
-        turn = 'w' if self.board.turn else 'b'
+        turn = "w" if self.board.turn else "b"
         castling = self.board.castling_xfen()
-        en_passant = chess.square_name(self.board.ep_square) if self.board.ep_square else "-"
+        en_passant = (
+            chess.square_name(self.board.ep_square) if self.board.ep_square else "-"
+        )
         halfmove = self.board.halfmove_clock
         fullmove = self.board.fullmove_number
 
@@ -103,7 +106,7 @@ class ChessBot:
             "castling": castling,
             "en_passant": en_passant,
             "halfmove": halfmove,
-            "fullmove": fullmove
+            "fullmove": fullmove,
         }
 
 
@@ -119,28 +122,47 @@ def board_to_fen(board, turn, castling, en_passant, halfmove="0", fullmove="1"):
     :param fullmove: Número de movimientos completos (default 1).
     :return: String en formato FEN.
     """
+
+    dict_pices = {
+        0: "",
+        1: "P",
+        2: "N",
+        3: "B",
+        4: "R",
+        5: "Q",
+        6: "K",
+        -1: "p",
+        -2: "n",
+        -3: "b",
+        -4: "r",
+        -5: "q",
+        -6: "k",
+    }
+
     fen_rows = []
     for row in board:
         fen_row = ""
         empty = 0
         for cell in row:
-            if cell == ".":
+            if cell == 0:  # Casilla vacía
                 empty += 1
             else:
-                if empty > 0:
+                if empty > 0:  # Añadir casillas vacías previas
                     fen_row += str(empty)
                     empty = 0
-                fen_row += cell
-        if empty > 0:
+                fen_row += dict_pices[cell]  # Añadir la pieza
+        if empty > 0:  # Añadir las casillas vacías al final de la fila
             fen_row += str(empty)
         fen_rows.append(fen_row)
-    
+
     # Unir las filas con '/'
     fen_board = "/".join(fen_rows)
-    
+
     # Construir el FEN completo
     fen = f"{fen_board} {turn} {castling} {en_passant} {halfmove} {fullmove}"
     return fen
+
+
 
 def fen_to_board(fen):
     """
@@ -159,31 +181,32 @@ def fen_to_board(fen):
     # La parte del tablero en FEN es la primera antes del espacio
     fen_board = fen.split()[0]
     board = []
-    
-    for row in fen_board.split('/'):
+
+    for row in fen_board.split("/"):
         board_row = []
         for char in row:
             if char.isdigit():
                 # Agregar '.' para casillas vacías
-                board_row.extend(['.'] * int(char))
+                board_row.extend(["."] * int(char))
             else:
                 # Agregar la pieza correspondiente
                 board_row.append(char)
         board.append(board_row)
-    
+
     return board
 
+
 # Esto se puede cambiar en función de como sea más conveniente
-# Es la supuesta detección del tablero 
+# Es la supuesta detección del tablero
 board = [
-    ["r", "n", "b", "q", "k", "b", "n", "r"],
-    ["p", "p", "p", "p", "p", "p", "p", "p"],
-    [".", ".", ".", ".", ".", ".", ".", "."],
-    [".", ".", ".", ".", ".", ".", ".", "."],
-    [".", ".", ".", ".", ".", ".", ".", "."],
-    [".", ".", ".", ".", ".", ".", ".", "."],
-    ["P", "P", "P", "P", "P", "P", "P", "P"],
-    ["R", "N", "B", "Q", "K", "B", "N", "R"]
+    [-4, -2, -3, -5, -6, -3, -2, -4],
+    [-1, -1, -1, -1, -1, -1, -1, -1],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1],
+    [4, 2, 3, 5, 6, 3, 2, 4],
 ]
 
 stockfish_path = "stockfish-windows-x86-64-sse41-popcnt\stockfish\stockfish-windows-x86-64-sse41-popcnt.exe"
@@ -204,8 +227,8 @@ fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
 
 running = True
 while running:
-    # Simula la detección
-    board = fen_to_board(fen)
+    # # Simula la detección
+    # board = fen_to_board(fen)
 
     # Una vez detectado el tablero lo pasa a formato fen
     fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
@@ -217,7 +240,6 @@ while running:
     illegal_move = True
 
     bot1.set_board(board)
-    
 
     while illegal_move:
 
@@ -225,10 +247,12 @@ while running:
 
         if temp_board is None:
             break
-        
+
         temp_move_legal = False
         for move in legal_moves:
-            if move == temp_board.peek():  # Si el movimiento del bot es igual a un movimiento legal
+            if (
+                move == temp_board.peek()
+            ):  # Si el movimiento del bot es igual a un movimiento legal
                 temp_move_legal = True
                 break
 
@@ -237,9 +261,8 @@ while running:
         else:
             print("Movimiento ilegal, realice otro movimiento")
             # Actualiza los movimientos legales después de un movimiento ilegal
-            
+
             legal_moves = list(board.legal_moves)
-            
 
     # Obtiene parámetros globales de la partida
     fen = temp_board.fen()
@@ -249,7 +272,7 @@ while running:
     en_passant = fen_parameteres["en_passant"]
     halfmove = fen_parameteres["halfmove"]
     fullmove = fen_parameteres["fullmove"]
-    
+
     # Simula la detección
     board = fen_to_board(fen)
     fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
@@ -279,4 +302,3 @@ elif result == "0-1":
     print("Ganan las negras.")
 else:
     print("Empate.")
-
