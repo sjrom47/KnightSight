@@ -10,6 +10,14 @@ class ColorClassifier:
         self._white_mean_rgb_values = []
         self._black_mean_rgb_values = []
 
+    @property
+    def white_values(self):
+        return self._white_mean_rgb_values
+
+    @property
+    def black_values(self):
+        return self._black_mean_rgb_values
+
     def add_white_mean_rgb_value(self, value):
         self._white_mean_rgb_values.append(value)
 
@@ -18,7 +26,7 @@ class ColorClassifier:
 
     def train(self):
         X = np.array(self._white_mean_rgb_values + self._black_mean_rgb_values).reshape(
-            -1, 1
+            -1, 3
         )
         y = np.array(
             [0] * len(self._white_mean_rgb_values)
@@ -27,8 +35,9 @@ class ColorClassifier:
 
         self._model.fit(X, y)
 
-    def predict(self, value):
-        return self._model.predict([value])
+    def predict(self, img):
+        value = np.mean(img, axis=(0, 1)).reshape(1, -1)
+        return self._model.predict(value)
 
     def save(self, filename, path=COLOR_CLASSIFIER_DIR):
         with open(f"{path}/{filename}.pickle", "wb") as f:

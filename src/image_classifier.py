@@ -47,6 +47,10 @@ class ImageClassifier:
         )
         self._dictionary.setVocabulary(bow.vocabulary)
 
+    @property
+    def labels(self) -> dict:
+        return self._labels
+
     def train(
         self, training_set: List[str], iterations: int = 100, epsilon: float = 1e-6
     ):

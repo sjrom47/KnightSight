@@ -22,8 +22,34 @@ class Subtractor:
 
         self._image = image
 
-    def identify_moved_squares(self, diffs):
-        square_sum = np.zeros_like(diffs)
-        for i in range(len(diffs)):
-            for j in range(len(diffs[i])):
-                square_sum[i][j] = np.sum(diffs[i][j])
+    def identify_moved_squares(self, diffs, grid_size=(8, 8)):
+        square_sum = []
+        for diff in diffs:
+            square_sum.append(np.sum(diff))
+        top5_squares = np.argsort(square_sum, axis=None)[::-1][:5]
+        ratio23 = square_sum[top5_squares[1]] / square_sum[top5_squares[2]]
+        ratio12 = square_sum[top5_squares[0]] / square_sum[top5_squares[1]]
+        ratio45 = square_sum[top5_squares[3]] / square_sum[top5_squares[4]]
+        if ratio23 > 1.3 and ratio12 < 1.1:
+            transformed_squares = self.transform_to_board_coords(
+                top5_squares[:2], grid_size
+            )
+            print("Moved squares: ", transformed_squares)
+
+            return transformed_squares
+        elif ratio45 > 1.3:
+            transformed_squares = self.transform_to_board_coords(
+                top5_squares[:4], grid_size
+            )
+            print("Moved squares: ", transformed_squares)
+            return transformed_squares
+        else:
+            return None
+
+    def transform_to_board_coords(self, squares, grid_size=(8, 8)):
+        board_coords = []
+        for square in squares:
+            x = square // grid_size[0]
+            y = square % grid_size[0]
+            board_coords.append((x, y))
+        return board_coords

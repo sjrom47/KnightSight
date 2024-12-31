@@ -163,7 +163,6 @@ def board_to_fen(board, turn, castling, en_passant, halfmove="0", fullmove="1"):
     return fen
 
 
-
 def fen_to_board(fen):
     """
     Convierte un tablero en formato FEN a una lista de listas que representa el tablero.
@@ -196,109 +195,111 @@ def fen_to_board(fen):
     return board
 
 
-# Esto se puede cambiar en función de como sea más conveniente
-# Es la supuesta detección del tablero
-board = [
-    [-4, -2, -3, -5, -6, -3, -2, -4],
-    [-1, -1, -1, -1, -1, -1, -1, -1],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [4, 2, 3, 5, 6, 3, 2, 4],
-]
+if __name__ == "__main__":
+    # Esto se puede cambiar en función de como sea más conveniente
+    # Es la supuesta detección del tablero
+    board = [
+        [-4, -2, -3, -5, -6, -3, -2, -4],
+        [-1, -1, -1, -1, -1, -1, -1, -1],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1],
+        [4, 2, 3, 5, 6, 3, 2, 4],
+    ]
 
-stockfish_path = "stockfish-windows-x86-64-sse41-popcnt\stockfish\stockfish-windows-x86-64-sse41-popcnt.exe"
-bot1 = ChessBot(stockfish_path, depth=10, elo_rating=-1)
-bot2 = ChessBot(stockfish_path, depth=10, elo_rating=-1)
+    stockfish_path = "stockfish-windows-x86-64-sse41-popcnt\stockfish\stockfish-windows-x86-64-sse41-popcnt.exe"
+    bot1 = ChessBot(stockfish_path, depth=10, elo_rating=-1)
+    bot2 = ChessBot(stockfish_path, depth=10, elo_rating=-1)
 
-# Variables globlaes del tablero iniciales
-turn = "w"
-castling = "KQkq"
-en_passant = "-"
-halfmove = "0"
-fullmove = "1"
+    # Variables globlaes del tablero iniciales
+    turn = "w"
+    castling = "KQkq"
+    en_passant = "-"
+    halfmove = "0"
+    fullmove = "1"
 
-# Convierte el tablero detectado a formato que entiende el bot (fen)
-fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
-# fen = "r1bqkbnr/pp2pppp/2n5/2Pp4/4P3/2P5/PP3PPP/RNBQKBNR w KQkq - 0 1"
-
-
-running = True
-while running:
-    # # Simula la detección
-    # board = fen_to_board(fen)
-
-    # Una vez detectado el tablero lo pasa a formato fen
+    # Convierte el tablero detectado a formato que entiende el bot (fen)
     fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
-    board = chess.Board(fen)
-    print(board)
+    # fen = "r1bqkbnr/pp2pppp/2n5/2Pp4/4P3/2P5/PP3PPP/RNBQKBNR w KQkq - 0 1"
 
-    legal_moves = list(board.legal_moves)
+    running = True
+    while running:
+        # # Simula la detección
+        # board = fen_to_board(fen)
 
-    illegal_move = True
+        # Una vez detectado el tablero lo pasa a formato fen
+        fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
+        board = chess.Board(fen)
+        print(board)
 
-    bot1.set_board(board)
+        legal_moves = list(board.legal_moves)
 
-    while illegal_move:
+        illegal_move = True
 
-        temp_board = bot1.move()
+        bot1.set_board(board)
+
+        while illegal_move:
+
+            temp_board = bot1.move()
+
+            if temp_board is None:
+                break
+
+            temp_move_legal = False
+            for move in legal_moves:
+                if (
+                    move == temp_board.peek()
+                ):  # Si el movimiento del bot es igual a un movimiento legal
+                    temp_move_legal = True
+                    break
+
+            if temp_move_legal:
+                illegal_move = (
+                    False  # El movimiento es legal, así que salimos del bucle
+                )
+            else:
+                print("Movimiento ilegal, realice otro movimiento")
+                # Actualiza los movimientos legales después de un movimiento ilegal
+
+                legal_moves = list(board.legal_moves)
+
+        # Obtiene parámetros globales de la partida
+        fen = temp_board.fen()
+        fen_parameteres = bot1.get_fen_parameters()
+        turn = fen_parameteres["turn"]
+        castling = fen_parameteres["castling"]
+        en_passant = fen_parameteres["en_passant"]
+        halfmove = fen_parameteres["halfmove"]
+        fullmove = fen_parameteres["fullmove"]
+
+        # Simula la detección
+        board = fen_to_board(fen)
+        fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
+        board = chess.Board(fen)
+        print(board)
+
+        bot2.set_board(board)
+        temp_board = bot2.move()
 
         if temp_board is None:
             break
 
-        temp_move_legal = False
-        for move in legal_moves:
-            if (
-                move == temp_board.peek()
-            ):  # Si el movimiento del bot es igual a un movimiento legal
-                temp_move_legal = True
-                break
+        # Obtiene parámetros globales de la partida
+        fen = temp_board.fen()
+        fen_parameteres = bot2.get_fen_parameters()
+        turn = fen_parameteres["turn"]
+        castling = fen_parameteres["castling"]
+        en_passant = fen_parameteres["en_passant"]
+        halfmove = fen_parameteres["halfmove"]
+        fullmove = fen_parameteres["fullmove"]
 
-        if temp_move_legal:
-            illegal_move = False  # El movimiento es legal, así que salimos del bucle
-        else:
-            print("Movimiento ilegal, realice otro movimiento")
-            # Actualiza los movimientos legales después de un movimiento ilegal
-
-            legal_moves = list(board.legal_moves)
-
-    # Obtiene parámetros globales de la partida
-    fen = temp_board.fen()
-    fen_parameteres = bot1.get_fen_parameters()
-    turn = fen_parameteres["turn"]
-    castling = fen_parameteres["castling"]
-    en_passant = fen_parameteres["en_passant"]
-    halfmove = fen_parameteres["halfmove"]
-    fullmove = fen_parameteres["fullmove"]
-
-    # Simula la detección
-    board = fen_to_board(fen)
-    fen = board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
-    board = chess.Board(fen)
-    print(board)
-
-    bot2.set_board(board)
-    temp_board = bot2.move()
-
-    if temp_board is None:
-        break
-
-    # Obtiene parámetros globales de la partida
-    fen = temp_board.fen()
-    fen_parameteres = bot2.get_fen_parameters()
-    turn = fen_parameteres["turn"]
-    castling = fen_parameteres["castling"]
-    en_passant = fen_parameteres["en_passant"]
-    halfmove = fen_parameteres["halfmove"]
-    fullmove = fen_parameteres["fullmove"]
-
-# Game result
-result = board.result()
-if result == "1-0":
-    print("Ganan las blancas.")
-elif result == "0-1":
-    print("Ganan las negras.")
-else:
-    print("Empate.")
+    # Game result
+    result = board.result()
+    if result == "1-0":
+        print("Ganan las blancas.")
+    elif result == "0-1":
+        print("Ganan las negras.")
+    else:
+        print("Empate.")

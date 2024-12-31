@@ -27,7 +27,7 @@ def compute_mean_colors(image, labels):
 if __name__ == "__main__":
     # Load the image
     # imgs = load_images("data/labeled_data/pawn/*.jpg")
-    imgs = load_images("data/other_data/pieces/*/*.jpg")
+    imgs = load_images("data/other_data/pieces/bishop/*.jpg")
     centroid_list = []
     blue_centroid_list = []
     yellow_centroid_list = []

@@ -130,8 +130,8 @@ def split_image_into_squares(
     Split the warped image into squares
     """
     squares = []
-    for i in range(grid_size[0]):
-        for j in range(grid_size[1]):
+    for j in range(grid_size[1]):
+        for i in range(grid_size[0]):
             x = i * square_size + margin
             y = j * square_size + margin
             square = warped_img[y : y + square_size, x : x + square_size]

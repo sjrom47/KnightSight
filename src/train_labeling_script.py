@@ -24,7 +24,15 @@ def show_image_to_label(image):
             for f in os.listdir(f"{LABELED_IMAGES_DIR}/{piece}")
             if f.startswith(piece) and f.endswith(".jpg")
         ]
-        file_number = len(existing_files) + 1
+        existing_numbers = sorted(
+            [int(f.split("_")[1].split(".")[0]) for f in existing_files]
+        )
+        file_number = 1
+        for num in existing_numbers:
+            if num != file_number:
+                break
+            file_number += 1
+        print(f"Saving as {piece}_{file_number:03d}")
         save_image(
             image, f"{LABELED_IMAGES_DIR}/{piece}/", f"/{piece}_{file_number:03d}"
         )

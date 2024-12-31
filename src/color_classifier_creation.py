@@ -25,7 +25,7 @@ def load_training_set(path=COLOR_LABELED_IMAGES_DIR, resize=True):
             imgs = [
                 cv2.resize(img, (20, 20), interpolation=cv2.INTER_AREA) for img in imgs
             ]
-        training_set[color] = [img.reshape(-1, 3) for img in imgs]
+        training_set[color] = imgs
 
     return training_set
 
