@@ -28,7 +28,7 @@ class KnightSight:
             piece_classifier_path, color_classifier_path
         )
         self._tracker = Tracker()
-        self._gmm_filter = GMM_filter()
+        self._gmm_filter = GMM_filter(history=70)
         self._visual_board = VisualBoard()
         self._subtractor = Subtractor()
         self._board_size = board_size
@@ -37,6 +37,8 @@ class KnightSight:
         self._corners = None
         self._threshold = hand_threshold
         self._piece2int = {piece: i + 1 for i, piece in enumerate(PIECE_TYPES)}
+        self._mog_counter = 1
+        self._objects_present = False
 
     @property
     def classifier(self):
@@ -68,9 +70,9 @@ class KnightSight:
 
             warped_img, M = warp_chessboard_image(img, grid)
             squares_imgs = split_image_into_squares(warped_img, self._board_size)
-            for img in squares_imgs:
-                print(self._classifier.classify(img))
-                show_image(img)
+            # for img in squares_imgs:
+            #     print(self._classifier.classify(img))
+            # show_image(img)
 
             labels = self._classifier.classify_batch(squares_imgs)
 
@@ -133,7 +135,7 @@ class KnightSight:
         return int_piece
 
     def corner_detection(self, img):
-        _, grid = find_chessboard_corners(img, sigma=1.5)
+        _, grid = find_chessboard_corners(img, sigma=1)
         warped_img, M = warp_chessboard_image(img, grid)
         ideal_grid = get_ideal_grid(self._board_size)
         self._corners = unwarp_points(ideal_grid, M)
@@ -143,19 +145,27 @@ class KnightSight:
 
     def process_frame(self, img):
         if self._corners is None:
-            warped_img = self.corner_detection(img)
+                warped_img = self.corner_detection(img)
         else:
             warped_img, M = warp_chessboard_image(img, self._corners)
-        warped_masked_img = self._gmm_filter.apply(warped_img)
-        objects_present = self.check_for_objects(warped_masked_img)
+            warped_masked_img = self._gmm_filter.apply(warped_img)
+        if self._mog_counter % 5 == 0:
+            
+            self._objects_present = self.check_for_objects(warped_masked_img)
+            self._mog_counter = 1
+        else:
+            
+            self._mog_counter += 1
+        # show_image(warped_masked_img)
+
 
         if self._state == KnightSightState.HAND:
-            if not objects_present:
+            if not self._objects_present:
                 self._state = KnightSightState.CORNER_DETECTION
             else:
                 self._state = KnightSightState.HAND
         elif self._state == KnightSightState.TRACKING:
-            if objects_present:
+            if self._objects_present:
                 self._state = KnightSightState.HAND
             else:
                 self._state = KnightSightState.TRACKING
@@ -168,9 +178,9 @@ class KnightSight:
             warped_img = self.corner_detection(img)
             difference = self._subtractor.subtract(warped_img)
             if difference is not None:
-                show_image(difference)
-                show_image(img)
-                show_image(warped_img)
+                # show_image(abs(difference))
+                # show_image(img)
+                # show_image(warped_img)
                 square_diffs = split_image_into_squares(difference, self._board_size)
                 moved_squares = self._subtractor.identify_moved_squares(square_diffs)
                 if moved_squares is not None:
@@ -181,23 +191,30 @@ class KnightSight:
 
         elif self._state == KnightSightState.TRACKING:
             self._corners = self._tracker.track(img)
+                
 
     def check_for_objects(self, img):
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
+        print(sum(sum(img)))
         return sum(sum(img)) > self._threshold
 
+def main(image, video):
+    knight_sight.initialise_first_frame(*image, override=True)
+    for frame in video:
+
+        knight_sight.process_frame(frame)
+        # print(knight_sight.visual_board)
+        
 
 if __name__ == "__main__":
     knight_sight = KnightSight()
     image = load_images("data/photos/extra/image_1.jpg")
     filename = "test_video2.mp4"
     video = load_video(f"{VIDEOS_DIR}/{filename}")
-    knight_sight.initialise_first_frame(*image, override=True)
-    for frame in video:
+    #main(image, video)
+    import cProfile
 
-        knight_sight.process_frame(frame)
-        # print(knight_sight.visual_board)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+    cProfile.run('main(image,video)')
+    

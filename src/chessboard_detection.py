@@ -261,7 +261,7 @@ def expand_square_grid(initial_square, grid, corners, tree, board_size, img=None
         and len(initial_square["left"]) == board_size[1] + 1
     ):
         return initial_square, grid
-    threshold = 0.085
+    threshold = 0.075
     sides_order = ["up", "left", "down", "right"]
     new_square = {"up": [], "down": [], "left": [], "right": []}
 

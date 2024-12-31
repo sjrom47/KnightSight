@@ -8,30 +8,33 @@ if __name__ == "__main__":
     knight_sight = KnightSight()
     # Initialize the camera
     print("Place the camera pointing to the chessboard")
-    cv2.waitKey(0)
+
     picam2 = Picamera2()
 
-    # Configure the camera
-    picam2.configure(picam2.create_still_configuration())
-
-    # Start the camera
+    full_res_config = picam2.create_still_configuration(
+        main={"size": picam2.sensor_resolution}
+    )
+    picam2.configure(full_res_config)
     picam2.start()
-
     first_frame = picam2.capture_array()
 
     # Stop the camera
     picam2.stop()
 
-    knight_sight.initialise_first_frame(first_frame)
+    knight_sight.initialise_first_frame(first_frame, override=False)
 
     print("KnightSight has been set up.")
     print("Press 'q' to quit")
-    cap = cv2.VideoCapture(0)
+    low_res_config = picam2.create_still_configuration(main={"size": (1920, 1080)})
+    picam2.configure(low_res_config)
+    picam2.start()
+
     while True:
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
-        ret, frame = cap.read()
-        if not ret:
-            print("Error: Unable to read frame.")
-            break
+        frame = picam2.capture_array()
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        cv2.imshow('frames', frame)
         knight_sight.process_frame(frame)
+    picam2.stop()
+    cv2.destroyAllWindows()

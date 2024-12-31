@@ -3,7 +3,7 @@ import cv2
 
 
 class GMM_filter:
-    def __init__(self, history=200, varThreshold=25, detectShadows=False):
+    def __init__(self, history=200, varThreshold=60, detectShadows=False):
         self._history = history
         self._varThreshold = varThreshold
         self._detectShadows = detectShadows
@@ -12,6 +12,7 @@ class GMM_filter:
             varThreshold=self._varThreshold,
             detectShadows=self._detectShadows,
         )
+        
 
     @property
     def mog_params(self):

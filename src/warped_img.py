@@ -19,7 +19,7 @@ def warp_chessboard_image(
             grid_size[0] * square_size + 2 * margin,
             grid_size[1] * square_size + 2 * margin,
         ),
-        flags=cv2.INTER_CUBIC,
+        flags=cv2.INTER_LINEAR,
     )
     return warped, M
 
