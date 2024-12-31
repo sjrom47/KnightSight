@@ -11,7 +11,10 @@ def warp_chessboard_image(
     """
     grid = grid.reshape(-1, 2)
     ideal_grid = get_ideal_grid(grid_size)
+
     M, _ = cv2.findHomography(np.float32(grid), np.float32(ideal_grid), cv2.RANSAC)
+    # Check for duplicate points
+
     warped = cv2.warpPerspective(
         img,
         M,

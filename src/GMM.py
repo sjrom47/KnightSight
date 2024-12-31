@@ -12,7 +12,6 @@ class GMM_filter:
             varThreshold=self._varThreshold,
             detectShadows=self._detectShadows,
         )
-        
 
     @property
     def mog_params(self):

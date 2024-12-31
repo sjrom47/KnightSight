@@ -27,30 +27,30 @@ class KnightSight:
         self._classifier = ChessPieceClassifier(
             piece_classifier_path, color_classifier_path
         )
-        self._tracker = Tracker()
-        self._gmm_filter = GMM_filter(history=70)
+        # self._tracker = Tracker()
+        # self._gmm_filter = GMM_filter(history=70)
         self._visual_board = VisualBoard()
         self._subtractor = Subtractor()
         self._board_size = board_size
-        self._hand_threshold = hand_threshold
-        self._state = None
+        # self._hand_threshold = hand_threshold
+        # self._state = None
         self._corners = None
         self._threshold = hand_threshold
         self._piece2int = {piece: i + 1 for i, piece in enumerate(PIECE_TYPES)}
-        self._mog_counter = 1
-        self._objects_present = False
+        # self._mog_counter = 1
+        # self._objects_present = False
 
     @property
     def classifier(self):
         return self._classifier
 
-    @property
-    def tracker(self):
-        return self._tracker
+    # @property
+    # def tracker(self):
+    #     return self._tracker
 
-    @property
-    def filter(self):
-        return self._filter
+    # @property
+    # def filter(self):
+    #     return self._filter
 
     @property
     def visual_board(self):
@@ -139,59 +139,53 @@ class KnightSight:
         warped_img, M = warp_chessboard_image(img, grid)
         ideal_grid = get_ideal_grid(self._board_size)
         self._corners = unwarp_points(ideal_grid, M)
-        self._tracker.set_up_first_frame(img, self._corners)
+        # self._tracker.set_up_first_frame(img, self._corners)
         new_warped_img, M = warp_chessboard_image(img, self._corners)
         return new_warped_img
 
     def process_frame(self, img):
-        if self._corners is None:
-            warped_img = self.corner_detection(img)
-        else:
-            warped_img, M = warp_chessboard_image(img, self._corners)
-            warped_masked_img = self._gmm_filter.apply(warped_img)
-        if self._mog_counter % 5 == 0:
+        # if self._corners is None:
+        #     warped_img = self.corner_detection(img)
+        # else:
+        #     warped_img, M = warp_chessboard_image(img, self._corners)
+        #     warped_masked_img = self._gmm_filter.apply(warped_img)
+        # if self._mog_counter % 5 == 0:
 
-            self._objects_present = self.check_for_objects(warped_masked_img)
-            self._mog_counter = 1
-        else:
+        #     self._objects_present = self.check_for_objects(warped_masked_img)
+        #     self._mog_counter = 1
+        # else:
 
-            self._mog_counter += 1
-        # show_image(warped_masked_img)
+        #     self._mog_counter += 1
+        # # show_image(warped_masked_img)
 
-        if self._state == KnightSightState.HAND:
-            if not self._objects_present:
-                self._state = KnightSightState.CORNER_DETECTION
-            else:
-                self._state = KnightSightState.HAND
-        elif self._state == KnightSightState.TRACKING:
-            if self._objects_present:
-                self._state = KnightSightState.HAND
-            else:
-                self._state = KnightSightState.TRACKING
-        elif self._state == KnightSightState.CORNER_DETECTION:
-            self._state = KnightSightState.TRACKING
-        else:
-            self._state = KnightSightState.CORNER_DETECTION
+        # if self._state == KnightSightState.HAND:
+        #     if not self._objects_present:
+        #         self._state = KnightSightState.CORNER_DETECTION
+        #     else:
+        #         self._state = KnightSightState.HAND
+        # elif self._state == KnightSightState.TRACKING:
+        #     if self._objects_present:
+        #         self._state = KnightSightState.HAND
+        #     else:
+        #         self._state = KnightSightState.TRACKING
+        # elif self._state == KnightSightState.CORNER_DETECTION:
+        #     self._state = KnightSightState.TRACKING
+        # else:
+        #     self._state = KnightSightState.CORNER_DETECTION
 
-        if self._state == KnightSightState.CORNER_DETECTION:
-            warped_img = self.corner_detection(img)
-            difference = self._subtractor.subtract(warped_img)
-            if difference is not None:
-                # show_image(abs(difference))
-                # show_image(img)
-                # show_image(warped_img)
-                square_diffs = split_image_into_squares(difference, self._board_size)
-                moved_squares = self._subtractor.identify_moved_squares(square_diffs)
-                if moved_squares is not None:
-                    self._visual_board.make_move(*moved_squares)
-                    #! This has to receive confirmation in final version
-                    self._visual_board.confirm_move()
-                    print(self._visual_board)
-
-        elif self._state == KnightSightState.TRACKING:
-            corners = self._tracker.track(img)
-            if len(corners) == self._board_size[0] * self._board_size[1]:
-                self._corners = corners
+        warped_img = self.corner_detection(img)
+        difference = self._subtractor.subtract(warped_img)
+        if difference is not None:
+            # show_image(abs(difference))
+            # show_image(img)
+            # show_image(warped_img)
+            square_diffs = split_image_into_squares(difference, self._board_size)
+            moved_squares = self._subtractor.identify_moved_squares(square_diffs)
+            if moved_squares is not None:
+                self._visual_board.make_move(*moved_squares)
+                #! This has to receive confirmation in final version
+                self._visual_board.confirm_move()
+                print(self._visual_board)
 
     def check_for_objects(self, img):
         if len(img.shape) == 3:
