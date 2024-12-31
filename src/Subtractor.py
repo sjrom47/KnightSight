@@ -31,20 +31,17 @@ class Subtractor:
         ratio23 = square_sum[top5_squares[1]] / square_sum[top5_squares[2]]
         ratio12 = square_sum[top5_squares[0]] / square_sum[top5_squares[1]]
         ratio45 = square_sum[top5_squares[3]] / square_sum[top5_squares[4]]
-        print("Ratios: ", ratio23, ratio12, ratio45)
         #! Castling still not implemented
         if ratio23 / ratio12 > 1.5 or ratio12 > 1.3:
             transformed_squares = self.transform_to_board_coords(
                 top5_squares[:2], grid_size
             )
-            print("Moved squares: ", transformed_squares)
 
             return transformed_squares
         elif ratio45 > 1.3:
             transformed_squares = self.transform_to_board_coords(
                 top5_squares[:4], grid_size
             )
-            print("Moved squares: ", transformed_squares)
             return transformed_squares
         else:
             return None

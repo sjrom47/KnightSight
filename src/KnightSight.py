@@ -133,7 +133,7 @@ class KnightSight:
         return int_piece
 
     def corner_detection(self, img):
-        _, grid = find_chessboard_corners(img, sigma=2)
+        _, grid = find_chessboard_corners(img, sigma=1.5)
         warped_img, M = warp_chessboard_image(img, grid)
         ideal_grid = get_ideal_grid(self._board_size)
         self._corners = unwarp_points(ideal_grid, M)
@@ -173,7 +173,6 @@ class KnightSight:
                 show_image(warped_img)
                 square_diffs = split_image_into_squares(difference, self._board_size)
                 moved_squares = self._subtractor.identify_moved_squares(square_diffs)
-                print(moved_squares)
                 if moved_squares is not None:
                     self._visual_board.make_move(*moved_squares)
                     #! This has to receive confirmation in final version
