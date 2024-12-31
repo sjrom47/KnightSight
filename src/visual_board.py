@@ -5,10 +5,11 @@ import numpy as np
 class VisualBoard:
     def __init__(self, state=None):
         self._state = state
-        self._temp_state = None
+        self._temp_state = state.copy() if state is not None else None
 
     def set_initial_state(self, state):
         self._state = state
+        self._temp_state = state.copy()
         self._playing = 1
 
     @property
@@ -22,11 +23,11 @@ class VisualBoard:
     def make_move(self, pos1, pos2):
         start_ind = np.argmax(
             [
-                self._playing * self._state[pos1[0], pos1[1]],
-                self._playing * self._state[pos2[0], pos2[1]],
+                self._playing * self._state[pos1[0]][pos1[1]],
+                self._playing * self._state[pos2[0]][pos2[1]],
             ]
         )
-        end_ind = 1 - start
+        end_ind = 1 - start_ind
         start = (pos1, pos2)[start_ind]
         end = (pos1, pos2)[end_ind]
         start_row, start_col = start
@@ -36,7 +37,7 @@ class VisualBoard:
 
     def confirm_move(self):
         self._state = self._temp_state
-        self._temp_state = None
+        self._temp_state = self._state.copy()
         self._playing = -self._playing
 
     def replace_piece(self, row, col, piece):

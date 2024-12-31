@@ -148,8 +148,6 @@ class KnightSight:
             warped_img, M = warp_chessboard_image(img, self._corners)
         warped_masked_img = self._gmm_filter.apply(warped_img)
         objects_present = self.check_for_objects(warped_masked_img)
-        show_image(warped_masked_img)
-        print(objects_present)
 
         if self._state == KnightSightState.HAND:
             if not objects_present:
@@ -167,25 +165,6 @@ class KnightSight:
             self._state = KnightSightState.CORNER_DETECTION
 
         if self._state == KnightSightState.CORNER_DETECTION:
-            # _, grid = find_chessboard_corners(img, sigma=2)
-            # # draw_img = img.copy()
-            # # for row in grid:
-            # #     for corner in row:
-            # #         cv2.circle(
-            # #             draw_img, tuple(int(i) for i in corner), 5, (0, 0, 255), -1
-            # #         )
-            # # show_image(draw_img)
-            # # draw_img = img.copy()
-            # # for row in self._corners:
-            # #     for corner in row:
-            # #         cv2.circle(
-            # #             draw_img, tuple(int(i) for i in corner), 5, (0, 0, 255), -1
-            # #         )
-            # # show_image(draw_img)
-            # warped_img, M = warp_chessboard_image(img, grid)
-            # ideal_grid = get_ideal_grid(self._board_size)
-            # self._corners = unwarp_points(ideal_grid, M)
-            # self._tracker.set_up_first_frame(warped_img, self._corners)
             warped_img = self.corner_detection(img)
             difference = self._subtractor.subtract(warped_img)
             if difference is not None:
@@ -194,19 +173,20 @@ class KnightSight:
                 show_image(warped_img)
                 square_diffs = split_image_into_squares(difference, self._board_size)
                 moved_squares = self._subtractor.identify_moved_squares(square_diffs)
-                self._visual_board.make_move(*moved_squares)
-                #! This has to receive confirmation in final version
-                self._visual_board.confirm_move()
+                print(moved_squares)
+                if moved_squares is not None:
+                    self._visual_board.make_move(*moved_squares)
+                    #! This has to receive confirmation in final version
+                    self._visual_board.confirm_move()
+                    print(self._visual_board)
 
         elif self._state == KnightSightState.TRACKING:
-            print("tracking")
             self._corners = self._tracker.track(img)
 
     def check_for_objects(self, img):
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
-        print(sum(sum(img)))
         return sum(sum(img)) > self._threshold
 
 
@@ -219,6 +199,6 @@ if __name__ == "__main__":
     for frame in video:
 
         knight_sight.process_frame(frame)
-        print(knight_sight.visual_board)
+        # print(knight_sight.visual_board)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break

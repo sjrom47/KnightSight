@@ -14,6 +14,7 @@ class Subtractor:
             if len(frame.shape) == 3:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             diff = cv2.absdiff(self._image, frame)
+            self.set_image(frame)
             return diff
 
     def set_image(self, image):
@@ -30,7 +31,9 @@ class Subtractor:
         ratio23 = square_sum[top5_squares[1]] / square_sum[top5_squares[2]]
         ratio12 = square_sum[top5_squares[0]] / square_sum[top5_squares[1]]
         ratio45 = square_sum[top5_squares[3]] / square_sum[top5_squares[4]]
-        if ratio23 > 1.3 and ratio12 < 1.1:
+        print("Ratios: ", ratio23, ratio12, ratio45)
+        #! Castling still not implemented
+        if ratio23 / ratio12 > 1.5 or ratio12 > 1.3:
             transformed_squares = self.transform_to_board_coords(
                 top5_squares[:2], grid_size
             )
