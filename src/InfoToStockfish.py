@@ -44,6 +44,7 @@ class ChessBot:
         self.board = chess.Board()
         self.engine = Stockfish(stockfish_path)
         self.engine.set_skill_level(depth)
+        self.castling = "KQkq"
         self.dict_pices = {
             0: "",
             1: "P",
@@ -124,8 +125,8 @@ class ChessBot:
             "fullmove": fullmove,
         }
 
-    def check_legal_move(self, board, turn, castling, en_passant, halfmove, fullmove):
-        current_fen = self.board_to_fen(board, turn, castling, en_passant, halfmove, fullmove)
+    def check_legal_move(self, board, turn, en_passant, halfmove, fullmove):
+        current_fen = self.board_to_fen(board, turn, en_passant, halfmove, fullmove)
 
         # Iterar sobre todos los movimientos legales
         for legal_move in self.board.legal_moves:
@@ -176,16 +177,16 @@ class ChessBot:
 
 
     def board_to_fen(self, board, turn, en_passant="-", halfmove="0", fullmove="1"):
-
+        
         if self.board.piece_at(chess.E1) and self.board.piece_at(chess.E1).symbol() == 'K':
             if board[7][6] == 6 or board[7][2] == 6:
-                castling = castling.replace('K', '')
-                castling = castling.replace('Q', '')
+                self.castling = self.castling.replace('K', '')
+                self.castling = self.castling.replace('Q', '')
 
         if self.board.piece_at(chess.E8) and self.board.piece_at(chess.E8).symbol() == 'k':
             if board[0][6] == -6 or board[0][2] == -6:
-                castling = castling.replace('k', '')
-                castling = castling.replace('q', '')
+                self.castling = self.castling.replace('k', '')
+                self.castling = self.castling.replace('q', '')
 
         pawn_action = self.detect_pawn_move_or_capture(board, self.board.fen())
         if pawn_action:
@@ -216,7 +217,7 @@ class ChessBot:
         fen_board = "/".join(fen_rows)
 
         # Construir el FEN completo
-        fen = f"{fen_board} {turn} {castling} {en_passant} {halfmove} {fullmove}"
+        fen = f"{fen_board} {turn} {self.castling} {en_passant} {halfmove} {fullmove}"
         return fen
 
 

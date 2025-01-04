@@ -1,6 +1,7 @@
 from stockfish import Stockfish
 import chess
 
+
 class ChessBot:
     """
     A ChessBot class that uses the Stockfish chess engine to make moves based on the current board state.
@@ -16,11 +17,11 @@ class ChessBot:
     -------
     __init__(stockfish_path: str, depth: int = 20, elo_rating: int = -1)
         Initializes the ChessBot instance with a Stockfish engine, board, depth, and optional ELO rating.
-    
+
     move() -> chess.Board or None
         Executes the best move according to Stockfish and updates the board. Returns the updated board state if a move
         is possible; otherwise, returns None.
-    
+
     set_board(board: chess.Board)
         Sets the current board state for the bot to the specified `board`.
     """
@@ -43,6 +44,22 @@ class ChessBot:
         self.board = chess.Board()
         self.engine = Stockfish(stockfish_path)
         self.engine.set_skill_level(depth)
+        self.castling = "KQkq"
+        self.dict_pices = {
+            0: "",
+            1: "P",
+            2: "N",
+            3: "B",
+            4: "R",
+            5: "Q",
+            6: "K",
+            -1: "p",
+            -2: "n",
+            -3: "b",
+            -4: "r",
+            -5: "q",
+            -6: "k",
+        }
 
         if elo_rating != -1:
             self.engine.set_elo_rating(elo_rating)
@@ -77,3 +94,174 @@ class ChessBot:
             A `chess.Board` instance representing the new board state to be set.
         """
         self.board = board
+
+    def get_fen_parameters(self):
+        """
+        Obtiene los parámetros necesarios para generar el formato FEN desde el tablero actual.
+
+        Returns:
+        -------
+        dict
+            Un diccionario con los parámetros necesarios para el FEN:
+            - turn: El turno actual ('w' o 'b').
+            - castling: Los enroques disponibles (por ejemplo, 'KQkq' o '-').
+            - en_passant: La casilla de peón al paso (por ejemplo, 'e3' o '-').
+            - halfmove: Contador de medio movimientos desde la última captura o movimiento de peón.
+            - fullmove: Número de movimientos completos en la partida.
+        """
+        turn = "w" if self.board.turn else "b"
+        castling = self.board.castling_xfen()
+        en_passant = (
+            chess.square_name(self.board.ep_square) if self.board.ep_square else "-"
+        )
+        halfmove = self.board.halfmove_clock
+        fullmove = self.board.fullmove_number
+
+        return {
+            "turn": turn,
+            "castling": castling,
+            "en_passant": en_passant,
+            "halfmove": halfmove,
+            "fullmove": fullmove,
+        }
+
+    def check_legal_move(self, board, turn, en_passant, halfmove, fullmove):
+        current_fen = self.board_to_fen(board, turn, en_passant, halfmove, fullmove)
+
+        # Iterar sobre todos los movimientos legales
+        for legal_move in self.board.legal_moves:
+            # Crear un tablero temporal para simular el movimiento
+            temp_board = self.board.copy()
+            temp_board.push(legal_move)
+
+            # Verificar si el FEN resultante coincide con el FEN actual
+            print(''.join(['0' if a == b else '1' for a,b in zip(current_fen,temp_board.fen())]))
+            print(temp_board.fen())
+            print(current_fen)
+            if temp_board.fen()[:-4] == current_fen[:-4]:
+                return True
+
+        return False
+
+    def detect_pawn_move_or_capture(self, current_board, previous_fen):
+        """
+        Detecta si ha habido un movimiento o captura de peón.
+        
+        current_board: El tablero actual (matriz de 8x8).
+        previous_fen: El tablero anterior en notación FEN.
+        
+        Retorna:
+            - 'move' si ha habido un movimiento de peón.
+            - 'capture' si ha habido una captura de peón.
+            - None si no ha ocurrido nada relacionado con peones.
+        """
+        # Convertir el FEN previo a una matriz
+        previous_board = self.fen_to_board(previous_fen)
+
+        # Contar peones en el tablero anterior y actual
+        previous_pawns = sum(row.count(1) + row.count(-1) for row in previous_board)
+        current_pawns = sum(row.count(1) + row.count(-1) for row in current_board)
+
+        # Detectar captura
+        if current_pawns < previous_pawns:
+            return "capture"
+
+        # Detectar movimiento
+        for i in range(8):
+            for j in range(8):
+                # Peón blanco movido
+                if previous_board[i][j] == 1 and current_board[i][j] != 1:
+                    return "move"
+                # Peón negro movido
+                if previous_board[i][j] == -1 and current_board[i][j] != -1:
+                    return "move"
+
+        return None  # No hay movimiento ni captura de peones
+
+
+    def board_to_fen(self, board, turn, en_passant="-", halfmove="0", fullmove="1"):
+        
+        if self.board.piece_at(chess.E1) and self.board.piece_at(chess.E1).symbol() == 'K':
+            if board[7][6] == 6 or board[7][2] == 6:
+                self.castling = self.castling.replace('K', '')
+                self.castling = self.castling.replace('Q', '')
+
+        if self.board.piece_at(chess.E8) and self.board.piece_at(chess.E8).symbol() == 'k':
+            if board[0][6] == -6 or board[0][2] == -6:
+                self.castling = self.castling.replace('k', '')
+                self.castling = self.castling.replace('q', '')
+
+        pawn_action = self.detect_pawn_move_or_capture(board, self.board.fen())
+        if pawn_action:
+            halfmove = 0
+
+        else: 
+            halfmove = str(int(halfmove) + 1)
+
+        fullmove = str(int(fullmove) + 1) if turn == 'w' else fullmove
+
+        fen_rows = []
+        for row in board:
+            fen_row = ""
+            empty = 0
+            for cell in row:
+                if cell == 0:  # Casilla vacía
+                    empty += 1
+                else:
+                    if empty > 0:  # Añadir casillas vacías previas
+                        fen_row += str(empty)
+                        empty = 0
+                    fen_row += self.dict_pices[cell]  # Añadir la pieza
+            if empty > 0:  # Añadir las casillas vacías al final de la fila
+                fen_row += str(empty)
+            fen_rows.append(fen_row)
+
+        # Unir las filas con '/'
+        fen_board = "/".join(fen_rows)
+
+        # Construir el FEN completo
+        fen = f"{fen_board} {turn} {self.castling} {en_passant} {halfmove} {fullmove}"
+        return fen
+
+
+    def fen_to_board(self, fen):
+        """
+        Convierte un FEN en una matriz de tablero.
+        
+        fen: La parte del FEN que describe el tablero (antes del primer espacio).
+        
+        Retorna:
+            Una matriz de 8x8 que representa el tablero.
+        """
+        fen_rows = fen.split(" ")[0].split("/")  # Extraer solo la parte del tablero
+        board = []
+        
+        for fen_row in fen_rows:
+            row = []
+            for char in fen_row:
+                if char.isdigit():  # Casillas vacías
+                    row.extend([0] * int(char))
+                else:  # Piezas
+                    piece = {
+                        'p': -1, 'r': -4, 'n': -2, 'b': -3, 'q': -5, 'k': -6,  # Negras
+                        'P': 1,  'R': 4,  'N': 2,  'B': 3,  'Q': 5,  'K': 6   # Blancas
+                    }[char]
+                    row.append(piece)
+            board.append(row)
+        
+        return board
+
+
+if __name__ == "__main__":
+    bot = ChessBot("stockfish-windows-x86-64-sse41-popcnt/stockfish/stockfish-windows-x86-64-sse41-popcnt.exe")
+
+
+    new_board = bot.move()
+    new_board_fen = new_board.fen()
+    print(new_board_fen)
+
+    new_board_board = bot.fen_to_board(new_board_fen)
+    print(new_board_board)
+
+    print(bot.check_legal_move(new_board_board, 'w', '-', 0, 1))
+    print(bot.board)

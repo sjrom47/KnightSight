@@ -33,7 +33,7 @@ class KnightSight:
         self._gmm_filter = GMM_filter(history=120)
         self._visual_board = VisualBoard()
         self._subtractor = Subtractor()
-        self._chess_bot = ChessBot()
+        self._chess_bot = ChessBot("stockfish-windows-x86-64-sse41-popcnt/stockfish/stockfish-windows-x86-64-sse41-popcnt.exe")
         self._kalman = KalmanFilter()
         self._board_size = board_size
         self._hand_threshold = hand_threshold
@@ -104,15 +104,15 @@ class KnightSight:
             self._visual_board.set_initial_state(temp_board.state)
         else:
             default_board = [
-                [4, 2, 3, 6, 5, 3, 2, 4],
-                [1, 1, 1, 1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [-1, -1, -1, -1, -1, -1, -1, -1],
-                [-4, -2, -3, -6, -5, -3, -2, -4],
-            ]
+            [-4, -2, -3, -5, -6, -3, -2, -4],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [4, 2, 3, 5, 6, 3, 2, 4],
+        ]
             self._visual_board.set_initial_state(default_board)
 
     def labels2board(self, labels):
@@ -179,7 +179,7 @@ class KnightSight:
             warped_img = self.corner_detection(img)
             difference = self._subtractor.subtract(warped_img)
             if difference is not None:
-
+                show_image(difference)
                 square_diffs = split_image_into_squares(difference, self._board_size)
                 moved_squares = self._subtractor.identify_moved_squares(square_diffs)
                 if moved_squares is not None:
@@ -189,7 +189,6 @@ class KnightSight:
                         self._chess_bot.check_legal_move(
                             self.visual_board._temp_state,
                             "w" if self._visual_board.playing == 1 else "b",
-                            "KQkq",
                             "-",
                             0,
                             1,
@@ -266,10 +265,11 @@ def main(image, video):
 
 if __name__ == "__main__":
 
+    stockfish_path = "stockfish-windows-x86-64-sse41-popcnt/stockfish\stockfish-windows-x86-64-sse41-popcnt.exe"
     knight_sight = KnightSight()
     image = load_images("data/photos/extra/image_1.jpg")
-    filename = "test_video2.mp4"
-    video = load_video(f"{VIDEOS_DIR}/{filename}")
+    filename = "data/test_video2.mp4"
+    video = load_video(f"{filename}")
     main(image, video)
     cv2.destroyAllWindows()
     # import cProfile
