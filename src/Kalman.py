@@ -4,7 +4,6 @@ import copy
 import cv2
 
 
-
 class KalmanFilter:
     def __init__(self, min_range_hsv, max_range_hsv):
         self.min_range_hsv = min_range_hsv
@@ -12,12 +11,10 @@ class KalmanFilter:
 
         # Inicialización del filtro de Kalman
         self.kf = cv2.KalmanFilter(4, 2)
-        self.kf.measurementMatrix = np.array([[1, 0, 0, 0],
-                                              [0, 1, 0, 0]], np.float32)
-        self.kf.transitionMatrix = np.array([[1, 0, 1, 0],
-                                             [0, 1, 0, 1],
-                                             [0, 0, 1, 0],
-                                             [0, 0, 0, 1]], np.float32)
+        self.kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
+        self.kf.transitionMatrix = np.array(
+            [[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32
+        )
         self.kf.processNoiseCov = np.eye(4, dtype=np.float32) * 1e-5
 
         self.track_window = None
@@ -26,12 +23,12 @@ class KalmanFilter:
 
     def initialize(self, frames):
         for i, frame in enumerate(frames):
-            cv2.imshow('Frame', frame)
+            cv2.imshow("Frame", frame)
             key = cv2.waitKey(0)
-            if key == ord('n'):
+            if key == ord("n"):
                 continue
-            elif key == ord('s'):
-                x, y, w, h = cv2.selectROI('Frame', frame, False)
+            elif key == ord("s"):
+                x, y, w, h = cv2.selectROI("Frame", frame, False)
                 self.track_window = (x, y, w, h)
                 cx = int(x + w / 2)
                 cy = int(y + h / 2)
@@ -41,7 +38,7 @@ class KalmanFilter:
                 self.kf.errorCovPost = np.eye(4, dtype=np.float32)
 
                 # Histogram calculation
-                crop = frame[y:y + h, x:x + w].copy()
+                crop = frame[y : y + h, x : x + w].copy()
                 hsv_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
                 mask = cv2.inRange(hsv_crop, self.min_range_hsv, self.max_range_hsv)
                 crop_hist = cv2.calcHist([hsv_crop], [0], mask, [180], [0, 180])
@@ -58,11 +55,15 @@ class KalmanFilter:
         frames_predictions = []
         predictions = []
 
-        for frame in frames[self.i:]:
+        for frame in frames[self.i :]:
             img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            img_bproject = cv2.calcBackProject([img_hsv], [0], self.crop_hist, [0, 180], 1)
+            img_bproject = cv2.calcBackProject(
+                [img_hsv], [0], self.crop_hist, [0, 180], 1
+            )
 
-            ret, self.track_window = cv2.meanShift(img_bproject, self.track_window, term_crit)
+            ret, self.track_window = cv2.meanShift(
+                img_bproject, self.track_window, term_crit
+            )
             x_, y_, w_, h_ = self.track_window
             c_x, c_y = x_ + w_ // 2, y_ + h_ // 2
 
@@ -76,20 +77,27 @@ class KalmanFilter:
             # Dibujar resultados
             if visualize:
                 input_frame = frame.copy()
-                cv2.circle(input_frame, (int(prediction[0]), int(prediction[1])), 5, (0, 0, 255), -1)
+                cv2.circle(
+                    input_frame,
+                    (int(prediction[0]), int(prediction[1])),
+                    5,
+                    (0, 0, 255),
+                    -1,
+                )
                 cv2.circle(input_frame, (c_x, c_y), 5, (0, 255, 0), -1)
                 cv2.rectangle(input_frame, (x_, y_), (x_ + w_, y_ + h_), (255, 0, 0), 2)
-                cv2.imshow('Frame', input_frame)
+                cv2.imshow("Frame", input_frame)
 
-                if cv2.waitKey(2) == ord('q'):
+                if cv2.waitKey(2) == ord("q"):
                     break
 
         cv2.destroyAllWindows()
 
         return frames, predictions
 
+
 if __name__ == "__main__":
-    videopath = "Video_Sergio_chess.mp4"
+    videopath = "data/other_data/videos/video_test_1.mp4"
     frames = load_video(videopath)
 
     # This ranges are created for the hand of the player

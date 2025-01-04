@@ -1,5 +1,6 @@
 PIECE_TYPES = ["pawn", "knight", "bishop", "rook", "queen", "king"]
 SECURITY_CODE = ["white", "black", "white", "white"]
+HAND_HSV_RANGES = [(0, 80, 20), (180, 170, 160)]
 PIECE_COLOR_MASKS = {
     "white": [(20, 85, 100), (35, 255, 255)],
     "black": [(90, 0, 90), (105, 255, 255)],

@@ -8,6 +8,8 @@ from GMM import GMM_filter
 from visual_board import VisualBoard
 from Subtractor import Subtractor
 from enum import Enum, auto
+from KalmanFilter import KalmanFilter
+from InfoToStockfish import ChessBot
 
 
 class KnightSightState(Enum):
@@ -28,16 +30,17 @@ class KnightSight:
             piece_classifier_path, color_classifier_path
         )
         self._tracker = Tracker()
-        self._gmm_filter = GMM_filter(history=70)
+        self._gmm_filter = GMM_filter(history=120)
         self._visual_board = VisualBoard()
         self._subtractor = Subtractor()
+        self._chess_bot = ChessBot()
+        self._kalman = KalmanFilter()
         self._board_size = board_size
         self._hand_threshold = hand_threshold
         self._state = None
         self._corners = None
         self._threshold = hand_threshold
         self._piece2int = {piece: i + 1 for i, piece in enumerate(PIECE_TYPES)}
-        self._mog_counter = 1
         self._objects_present = False
 
     @property
@@ -149,15 +152,13 @@ class KnightSight:
         else:
             warped_img, M = warp_chessboard_image(img, self._corners)
             warped_masked_img = self._gmm_filter.apply(warped_img)
-        if self._mog_counter % 5 == 0:
+            warped_masked_img = cv2.threshold(
+                warped_masked_img, 128, 255, cv2.THRESH_BINARY
+            )[1]
 
             self._objects_present = self.check_for_objects(warped_masked_img)
-            self._mog_counter = 1
-        else:
-
-            self._mog_counter += 1
         # show_image(warped_masked_img)
-
+        draw_img = img.copy()
         if self._state == KnightSightState.HAND:
             if not self._objects_present:
                 self._state = KnightSightState.CORNER_DETECTION
@@ -174,17 +175,26 @@ class KnightSight:
             self._state = KnightSightState.CORNER_DETECTION
 
         if self._state == KnightSightState.CORNER_DETECTION:
+            self._kalman.clear()
             warped_img = self.corner_detection(img)
             difference = self._subtractor.subtract(warped_img)
             if difference is not None:
-                # show_image(abs(difference))
-                # show_image(img)
-                # show_image(warped_img)
+
                 square_diffs = split_image_into_squares(difference, self._board_size)
                 moved_squares = self._subtractor.identify_moved_squares(square_diffs)
                 if moved_squares is not None:
                     self._visual_board.make_move(*moved_squares)
                     #! This has to receive confirmation in final version
+                    print(
+                        self._chess_bot.check_legal_move(
+                            self.visual_board._temp_state,
+                            "w" if self._visual_board.playing == 1 else "b",
+                            "KQkq",
+                            "-",
+                            0,
+                            1,
+                        )
+                    )
                     self._visual_board.confirm_move()
                     print(self._visual_board)
 
@@ -193,11 +203,56 @@ class KnightSight:
             if len(corners) == self._board_size[0] * self._board_size[1]:
                 self._corners = corners
 
+        elif self._state == KnightSightState.HAND:
+            # TODO: Implement hand detection
+
+            if self._kalman._track_window is None:
+                erosions = 1
+                warped_masked_img_copy = warped_masked_img.copy()
+                for _ in range(erosions):
+                    warped_masked_img_copy = cv2.erode(warped_masked_img_copy, None)
+
+                if self.check_for_objects(warped_masked_img_copy):
+                    self._kalman.initialize(warped_img, warped_masked_img)
+            else:
+                points, prediction = self._kalman.predict(warped_img)
+                points = points.reshape(-1, 2)
+                if prediction is not None:
+
+                    prediction = unwarp_points(prediction, M)
+                    draw_img = self.draw_points_on_frame(
+                        prediction, draw_img, (0, 255, 0)
+                    )
+                if points is not None:
+                    points = unwarp_points(points, M)
+                    draw_img = self.draw_rectangle_on_frame(
+                        points, draw_img, (255, 0, 0)
+                    )
+
+        draw_img = self.draw_points_on_frame(self._corners, draw_img)
+        cv2.imshow("Tracking", draw_img)
+        cv2.waitKey(10)
+
+    def draw_points_on_frame(self, corners, frame, color=(0, 0, 255)):
+        for corner in corners:
+            cv2.circle(frame, tuple(int(j) for j in corner), 5, color, -1)
+
+        return frame
+
+    def draw_rectangle_on_frame(self, rectangle, frame, color=(0, 0, 255)):
+        p1, p2, p3, p4 = rectangle
+        cv2.line(frame, tuple(int(i) for i in p1), tuple(int(i) for i in p2), color, 2)
+        cv2.line(frame, tuple(int(i) for i in p2), tuple(int(i) for i in p4), color, 2)
+        cv2.line(frame, tuple(int(i) for i in p4), tuple(int(i) for i in p3), color, 2)
+        cv2.line(frame, tuple(int(i) for i in p3), tuple(int(i) for i in p1), color, 2)
+        # cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+        return frame
+
     def check_for_objects(self, img):
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
-        print(sum(sum(img)))
+        # print(sum(sum(img)))
         return sum(sum(img)) > self._threshold
 
 
@@ -210,11 +265,13 @@ def main(image, video):
 
 
 if __name__ == "__main__":
+
     knight_sight = KnightSight()
     image = load_images("data/photos/extra/image_1.jpg")
     filename = "test_video2.mp4"
     video = load_video(f"{VIDEOS_DIR}/{filename}")
-    # main(image, video)
-    import cProfile
+    main(image, video)
+    cv2.destroyAllWindows()
+    # import cProfile
 
-    cProfile.run("main(image,video)")
+    # cProfile.run("main(image,video)")

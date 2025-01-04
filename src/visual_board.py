@@ -20,6 +20,10 @@ class VisualBoard:
     def playing(self):
         return self._playing
 
+    @property
+    def temp_state(self):
+        return self._temp_state
+
     def make_move(self, pos1, pos2):
         start_ind = np.argmax(
             [
