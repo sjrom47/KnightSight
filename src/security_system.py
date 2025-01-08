@@ -27,6 +27,7 @@ class SecuritySystem:
         )
         self._earlier_piece = False
         self._cap = cv2.VideoCapture(0)
+        self._current_password = []
 
     def capture_frame(self):
         # Capture frame from camera
@@ -54,11 +55,8 @@ class SecuritySystem:
         x, y, w, h = cv2.selectROI("Frame", frame, False)
         self._track_window = (x, y, w, h)
 
-    def stage_transition(self, correct):
-        if not correct:
-            self._state = SecurityState.STAGE1
-            print("Incorrect. Restarting security system.")
-        elif self._state == SecurityState.STAGE1:
+    def stage_transition(self):
+        if self._state == SecurityState.STAGE1:
             self._state = SecurityState.STAGE2
             print("Stage 1")
         elif self._state == SecurityState.STAGE2:
@@ -70,11 +68,14 @@ class SecuritySystem:
         elif self._state == SecurityState.STAGE4:
             self._state = SecurityState.CORRECT_CODE
             print("Stage 4")
+
+        elif self._state == SecurityState.CORRECT_CODE:
+            self._state = SecurityState.CORRECT_CODE
         else:
             raise ValueError("Invalid state")
 
-    def check_if_correct(self, piece_detected):
-        return piece_detected == SECURITY_CODE[self._state.value - 1]
+    def check_if_correct(self):
+        return self._current_password == SECURITY_CODE
 
     def check_piece_in_frame(self, frame):
         x, y, w, h = self._track_window
@@ -96,9 +97,7 @@ class SecuritySystem:
             minRadius=0,
             maxRadius=0,
         )
-        print("circles:", circles)
-        print("white_count:", white_count)
-        print("black_count:", black_count)
+        
         if max(white_count, black_count) > 200 and circles is not None:
             print("Piece detected")
             if white_count > black_count:
@@ -116,7 +115,7 @@ class SecuritySystem:
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
         for i in range(self._state.value - 1):
-            mean_hsv = np.uint8(np.mean(PIECE_COLOR_MASKS[SECURITY_CODE[i]], axis=0))
+            mean_hsv = np.uint8(np.mean(PIECE_COLOR_MASKS[self._current_password[i]], axis=0))
             mean_hsv = mean_hsv.reshape(1, 1, 3)
             # Convert to BGR
             mean_bgr = cv2.cvtColor(mean_hsv, cv2.COLOR_HSV2BGR)
@@ -148,20 +147,29 @@ class SecuritySystem:
                 break
             if key == ord("c"):
                 self._state = SecurityState.STAGE1
+                self._current_password = []
                 print("Clearing sequence")
+            if key == ord('s'):
+                if self.check_if_correct():
+                    print("Security system passed")
+                    break
+                else:
+                    print("Incorrect Password")
+                    self._state = SecurityState.STAGE1
+                    self._current_password = []
 
             piece_detected = self.check_piece_in_frame(frame)
 
             if piece_detected in ["black", "white"] and self._earlier_piece != (
                 piece_detected is not None
             ):
-                correct = self.check_if_correct(piece_detected)
-                self.stage_transition(correct)
+                
+                self.stage_transition()
+                self._current_password.append(piece_detected)
             frame = self.draw_on_frame(frame)
             cv2.imshow("Frame", frame)
-            if self._state == SecurityState.CORRECT_CODE:
-                print("Security system passed")
-                break
+            
+                
             if piece_detected != "detected":
                 self._earlier_piece = piece_detected is not None
         cv2.destroyAllWindows()

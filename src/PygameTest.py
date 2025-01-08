@@ -21,20 +21,20 @@ if __name__ == "__main__":
     WIDTH, HEIGHT = 600, 600  # Size of the window
     SQUARE_SIZE = WIDTH // 8  # Size of each square
 
-    # Load images for piecesç
+    # Load images for pieces
     pieces_images = {
-    "P": pygame.image.load("Piezas/wp.png"),
-    "N": pygame.image.load("Piezas/wn.png"),
-    "B": pygame.image.load("Piezas/wb.png"),
-    "R": pygame.image.load("Piezas/wr.png"),
-    "Q": pygame.image.load("Piezas/wq.png"),
-    "K": pygame.image.load("Piezas/wk.png"),
-    "p": pygame.image.load("Piezas/bp.png"),
-    "n": pygame.image.load("Piezas/bn.png"),
-    "b": pygame.image.load("Piezas/bb.png"),
-    "r": pygame.image.load("Piezas/br.png"),
-    "q": pygame.image.load("Piezas/bq.png"),
-    "k": pygame.image.load("Piezas/bk.png")
+    "P": pygame.image.load("data/Piezas/wp.png"),
+    "N": pygame.image.load("data/Piezas/wn.png"),
+    "B": pygame.image.load("data/Piezas/wb.png"),
+    "R": pygame.image.load("data/Piezas/wr.png"),
+    "Q": pygame.image.load("data/Piezas/wq.png"),
+    "K": pygame.image.load("data/Piezas/wk.png"),
+    "p": pygame.image.load("data/Piezas/bp.png"),
+    "n": pygame.image.load("data/Piezas/bn.png"),
+    "b": pygame.image.load("data/Piezas/bb.png"),
+    "r": pygame.image.load("data/Piezas/br.png"),
+    "q": pygame.image.load("data/Piezas/bq.png"),
+    "k": pygame.image.load("data/Piezas/bk.png")
     }
 
     for key, image in pieces_images.items():
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     # Initialize the chess board
     board = chess.Board()
-    stockfish_path = "stockfish-windows-x86-64-sse41-popcnt\stockfish\stockfish-windows-x86-64-sse41-popcnt.exe"
+    stockfish_path = "data/stockfish/stockfish-android-armv8"
     bot1 = ChessBot(stockfish_path, depth=9)# , elo_rating=2500)
     bot2 = ChessBot(stockfish_path, depth=10)# , elo_rating=2500)
 

@@ -10,7 +10,7 @@ from Subtractor import Subtractor
 from enum import Enum, auto
 from KalmanFilter import KalmanFilter
 from InfoToStockfish import ChessBot
-
+import pygame
 
 class KnightSightState(Enum):
     CORNER_DETECTION = auto()
@@ -33,7 +33,7 @@ class KnightSight:
         self._gmm_filter = GMM_filter(history=120)
         self._visual_board = VisualBoard()
         self._subtractor = Subtractor()
-        self._chess_bot = ChessBot("stockfish-windows-x86-64-sse41-popcnt/stockfish/stockfish-windows-x86-64-sse41-popcnt.exe")
+        self._chess_bot = ChessBot("stockfish/stockfish-android-armv8")
         self._kalman = KalmanFilter()
         self._board_size = board_size
         self._hand_threshold = hand_threshold
@@ -152,13 +152,11 @@ class KnightSight:
         else:
             warped_img, M = warp_chessboard_image(img, self._corners)
             warped_masked_img = self._gmm_filter.apply(warped_img)
-            warped_masked_img = cv2.threshold(
-                warped_masked_img, 128, 255, cv2.THRESH_BINARY
-            )[1]
-
             self._objects_present = self.check_for_objects(warped_masked_img)
         # show_image(warped_masked_img)
         draw_img = img.copy()
+        
+
         if self._state == KnightSightState.HAND:
             if not self._objects_present:
                 self._state = KnightSightState.CORNER_DETECTION
@@ -176,6 +174,8 @@ class KnightSight:
 
         if self._state == KnightSightState.CORNER_DETECTION:
             self._kalman.clear()
+            self._gmm_filter = GMM_filter(history = 100)
+             
             warped_img = self.corner_detection(img)
             difference = self._subtractor.subtract(warped_img)
             if difference is not None:
@@ -197,6 +197,8 @@ class KnightSight:
                     self._visual_board.confirm_move()
                     print(self._visual_board)
 
+            warped_masked_img = self._gmm_filter.apply(warped_img)
+
         elif self._state == KnightSightState.TRACKING:
             corners = self._tracker.track(img)
             if len(corners) == self._board_size[0] * self._board_size[1]:
@@ -207,7 +209,9 @@ class KnightSight:
 
             if self._kalman._track_window is None:
                 erosions = 1
+                
                 warped_masked_img_copy = warped_masked_img.copy()
+                
                 for _ in range(erosions):
                     warped_masked_img_copy = cv2.erode(warped_masked_img_copy, None)
 
@@ -230,7 +234,7 @@ class KnightSight:
 
         draw_img = self.draw_points_on_frame(self._corners, draw_img)
         cv2.imshow("Tracking", draw_img)
-        cv2.waitKey(10)
+        # cv2.waitKey(10)
 
     def draw_points_on_frame(self, corners, frame, color=(0, 0, 255)):
         for corner in corners:
@@ -263,15 +267,73 @@ def main(image, video):
         # print(knight_sight.visual_board)
 
 
+def draw_board(board):
+    for row in range(8):
+        for col in range(8):
+            color = (255, 255, 255) if (row + col) % 2 == 0 else (125, 135, 150)
+            pygame.draw.rect(screen, color, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            piece = board.state[row][col]
+            if piece:
+                piece_image = pieces_images.get(piece)
+                screen.blit(piece_image, (col * SQUARE_SIZE, row * SQUARE_SIZE))
+
 if __name__ == "__main__":
-
-    stockfish_path = "stockfish-windows-x86-64-sse41-popcnt/stockfish\stockfish-windows-x86-64-sse41-popcnt.exe"
+    print("Starting KnightSight...")
     knight_sight = KnightSight()
-    image = load_images("data/photos/extra/image_1.jpg")
-    filename = "data/test_video2.mp4"
-    video = load_video(f"{filename}")
-    main(image, video)
-    cv2.destroyAllWindows()
-    # import cProfile
+    # Initialize the camera
+    print("Place the camera pointing to the chessboard")
 
-    # cProfile.run("main(image,video)")
+    first_frame = load_images("data/photos/extra")[0]
+    video = load_video("data/test_video2.mp4")
+
+
+    knight_sight.initialise_first_frame(first_frame, override=True)
+
+    print("KnightSight has been set up.")
+    print("Press 'q' to quit")
+
+    pygame.init()
+
+    WIDTH, HEIGHT = 600, 600  # Size of the window
+    SQUARE_SIZE = WIDTH // 8  # Size of each square
+
+    # Load images for pieces
+    pieces_images = {
+    1: pygame.image.load("data/Piezas/wp.png"),
+    2: pygame.image.load("data/Piezas/wn.png"),
+    3: pygame.image.load("data/Piezas/wb.png"),
+    4: pygame.image.load("data/Piezas/wr.png"),
+    5: pygame.image.load("data/Piezas/wq.png"),
+    6: pygame.image.load("data/Piezas/wk.png"),
+    -1: pygame.image.load("data/Piezas/bp.png"),
+    -2: pygame.image.load("data/Piezas/bn.png"),
+    -3: pygame.image.load("data/Piezas/bb.png"),
+    -4: pygame.image.load("data/Piezas/br.png"),
+    -5: pygame.image.load("data/Piezas/bq.png"),
+    -6: pygame.image.load("data/Piezas/bk.png")
+    }
+
+    for key, image in pieces_images.items():
+        pieces_images[key] = pygame.transform.scale(image, (SQUARE_SIZE, SQUARE_SIZE))
+
+    # Set up the Pygame screen
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Chess Game")
+
+    for frame in video:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            break
+        
+        # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # cv2.imshow("frames", frame)
+
+        knight_sight.process_frame(frame)
+        draw_board(knight_sight.visual_board)
+        pygame.display.flip()
+
+    cv2.destroyAllWindows()
+

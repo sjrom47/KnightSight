@@ -3,16 +3,9 @@ import cv2
 from enum import Enum, auto
 import numpy as np
 import time
-from security_system import SecuritySystem
+from security_system import SecuritySystem, SecurityState
 from picamera2 import Picamera2
 
-
-class SecurityState(Enum):
-    STAGE1 = auto()
-    STAGE2 = auto()
-    STAGE3 = auto()
-    STAGE4 = auto()
-    CORRECT_CODE = auto()
 
 
 class RaspberrySecuritySystem(SecuritySystem):
@@ -37,7 +30,7 @@ class RaspberrySecuritySystem(SecuritySystem):
         # Check if the frame was captured successfully
         if frame is not None:
             # Save the captured frame to a file
-            return frame
+            return cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         else:
             print("Error: Could not capture frame.")
             return None
@@ -50,8 +43,7 @@ class RaspberrySecuritySystem(SecuritySystem):
         self.define_ROI(frame)
         print("You have to input the right security code to pass the security system")
         print("press c to clear the sequence")
-        while self._state != SecurityState.CORRECT_CODE:
-
+        while True:
             frame = self.capture_frame()
 
             key = cv2.waitKey(1) & 0xFF
@@ -59,20 +51,29 @@ class RaspberrySecuritySystem(SecuritySystem):
                 break
             if key == ord("c"):
                 self._state = SecurityState.STAGE1
+                self._current_password = []
                 print("Clearing sequence")
+            if key == ord('s'):
+                if self.check_if_correct():
+                    print("Security system passed")
+                    break
+                else:
+                    print("Incorrect Password")
+                    self._state = SecurityState.STAGE1
+                    self._current_password = []
 
             piece_detected = self.check_piece_in_frame(frame)
 
             if piece_detected in ["black", "white"] and self._earlier_piece != (
                 piece_detected is not None
             ):
-                correct = self.check_if_correct(piece_detected)
-                self.stage_transition(correct)
+                
+                self.stage_transition()
+                self._current_password.append(piece_detected)
             frame = self.draw_on_frame(frame)
             cv2.imshow("Frame", frame)
-            if self._state == SecurityState.CORRECT_CODE:
-                print("Security system passed")
-                break
+            
+                
             if piece_detected != "detected":
                 self._earlier_piece = piece_detected is not None
         cv2.destroyAllWindows()
@@ -80,5 +81,5 @@ class RaspberrySecuritySystem(SecuritySystem):
 
 
 if __name__ == "__main__":
-    security_system = SecuritySystem()
+    security_system = RaspberrySecuritySystem()
     security_system.run()

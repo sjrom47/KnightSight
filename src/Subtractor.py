@@ -32,8 +32,8 @@ class Subtractor:
         ratio12 = square_sum[top5_squares[0]] / square_sum[top5_squares[1]]
         ratio45 = square_sum[top5_squares[3]] / square_sum[top5_squares[4]]
         #! Castling still not implemented
-        # print(square_sum[top5_squares[0]] >10000,ratio23 / ratio12 > 2, square_sum[top5_squares[0]], top5_squares[0])
-        if ratio23 / ratio12 > 2 or square_sum[top5_squares[0]] > 300000:
+        print(square_sum[top5_squares[0]] >10000,ratio23 / ratio12 > 2, square_sum[top5_squares[0]], top5_squares[0])
+        if ratio23 / ratio12 > 2 or square_sum[top5_squares[0]] > 200000:
             transformed_squares = self.transform_to_board_coords(
                 top5_squares[:2], grid_size
             )

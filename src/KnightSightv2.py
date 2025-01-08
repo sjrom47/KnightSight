@@ -101,15 +101,15 @@ class KnightSight:
             self._visual_board.set_initial_state(temp_board.state)
         else:
             default_board = [
-                [4, 2, 3, 6, 5, 3, 2, 4],
-                [1, 1, 1, 1, 1, 1, 1, 1],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0],
-                [-1, -1, -1, -1, -1, -1, -1, -1],
-                [-4, -2, -3, -6, -5, -3, -2, -4],
-            ]
+            [-4, -2, -3, -5, -6, -3, -2, -4],
+            [-1, -1, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [4, 2, 3, 5, 6, 3, 2, 4],
+        ]
             self._visual_board.set_initial_state(default_board)
 
     def labels2board(self, labels):
@@ -135,7 +135,7 @@ class KnightSight:
         return int_piece
 
     def corner_detection(self, img):
-        _, grid = find_chessboard_corners(img, sigma=1.2)
+        _, grid = find_chessboard_corners(img, sigma=1.5)
         warped_img, M = warp_chessboard_image(img, grid)
         ideal_grid = get_ideal_grid(self._board_size)
         self._corners = unwarp_points(ideal_grid, M)
@@ -176,7 +176,7 @@ class KnightSight:
         warped_img = self.corner_detection(img)
         difference = self._subtractor.subtract(warped_img)
         if difference is not None:
-            # show_image(abs(difference))
+            # show_image(difference)
             # show_image(img)
             # show_image(warped_img)
             square_diffs = split_image_into_squares(difference, self._board_size)
