@@ -73,7 +73,9 @@ There are 2 additional dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+Create a hsv range value for your pieces using the `get_hsv_color_ranges()` function from `utils,py` for the security system
 
+You will have to make your own classifiers. For the piece classifier add your labeled data to `data/labeled_data`. To label your data, place it in `data/unlabeled/data` and use `train_labeling_script.py`. For the color classifier, add your labeled data to `data/color_labels` and run `color_classifier_creation.py`
 2. Launch the application:
 ```bash
 python src/Knightsight.py
@@ -86,7 +88,9 @@ python src/Knightsight.py
   
 This is a demo on a Raspberry Pi 5:
 
-https://github.com/user-attachments/assets/4a043cff-a562-4882-812d-d6377463e459
+
+https://github.com/user-attachments/assets/01cdd2d7-0c0c-40a8-990f-3fed2b282853
+
 
 
 
