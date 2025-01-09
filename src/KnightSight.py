@@ -12,6 +12,7 @@ from KalmanFilter import KalmanFilter
 from InfoToStockfish import ChessBot
 import pygame
 import time
+from security_system import SecuritySystem
 
 
 class KnightSightState(Enum):
@@ -311,6 +312,8 @@ def draw_board(board):
 
 
 if __name__ == "__main__":
+    security_system = SecuritySystem()
+    security_system.run()
     print("Starting KnightSight...")
     knight_sight = KnightSight(include_fps=True)
     # Initialize the camera
