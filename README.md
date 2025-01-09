@@ -83,6 +83,9 @@ python src/Knightsight.py
    * Complete the security system verification
    * Position the camera above the chessboard
    * Begin playing chess - the system will automatically detect and validate moves (not advised for weaker systems. In this case you can load a video and let it process)
+  
+This is a demo on a Raspberry Pi 5:
+https://github.com/sjrom47/KnightSight/assets/test_video.mp4
 
 ## Future Developments 🔮
 - AI opponent integration with adjustable difficulty using Stockfish
