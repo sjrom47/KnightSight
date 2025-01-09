@@ -94,5 +94,5 @@ python src/Knightsight.py
 - Improved performance on less powerful systems
 
 ## Developers 👨‍💻
-- [Sergio Jiménez Romero](https://github.com/sergiojimenez)
-- [Carlos Martínez Cuenca](https://github.com/carlosmartinez)
+- [Sergio Jiménez Romero](https://github.com/sjrom47)
+- [Carlos Martínez Cuenca](https://github.com/carlosIMAT)
