@@ -97,7 +97,7 @@ class SecuritySystem:
             minRadius=0,
             maxRadius=0,
         )
-        
+
         if max(white_count, black_count) > 200 and circles is not None:
             print("Piece detected")
             if white_count > black_count:
@@ -115,7 +115,9 @@ class SecuritySystem:
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
         for i in range(self._state.value - 1):
-            mean_hsv = np.uint8(np.mean(PIECE_COLOR_MASKS[self._current_password[i]], axis=0))
+            mean_hsv = np.uint8(
+                np.mean(PIECE_COLOR_MASKS[self._current_password[i]], axis=0)
+            )
             mean_hsv = mean_hsv.reshape(1, 1, 3)
             # Convert to BGR
             mean_bgr = cv2.cvtColor(mean_hsv, cv2.COLOR_HSV2BGR)
@@ -138,7 +140,7 @@ class SecuritySystem:
         self.define_ROI(frame)
         print("You have to input the right security code to pass the security system")
         print("press c to clear the sequence")
-        while self._state != SecurityState.CORRECT_CODE:
+        while True:
 
             frame = self.capture_frame()
 
@@ -149,7 +151,7 @@ class SecuritySystem:
                 self._state = SecurityState.STAGE1
                 self._current_password = []
                 print("Clearing sequence")
-            if key == ord('s'):
+            if key == ord("s"):
                 if self.check_if_correct():
                     print("Security system passed")
                     break
@@ -163,13 +165,12 @@ class SecuritySystem:
             if piece_detected in ["black", "white"] and self._earlier_piece != (
                 piece_detected is not None
             ):
-                
+
                 self.stage_transition()
                 self._current_password.append(piece_detected)
             frame = self.draw_on_frame(frame)
             cv2.imshow("Frame", frame)
-            
-                
+
             if piece_detected != "detected":
                 self._earlier_piece = piece_detected is not None
         cv2.destroyAllWindows()

@@ -853,7 +853,7 @@ if __name__ == "__main__":
         cv2.resize(img, (shape[1] // 2, shape[0] // 2))
         for img, shape in zip(imgs, imgs_shape)
     ]
-    sigma = 5
+    sigma = 3.7
     t0 = time.time()
     blurred_imgs = blur_images(imgs, sigma)
     print(f"Blurring took {time.time() - t0:.3f} s")

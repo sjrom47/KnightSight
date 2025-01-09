@@ -11,6 +11,8 @@ from enum import Enum, auto
 from KalmanFilter import KalmanFilter
 from InfoToStockfish import ChessBot
 import pygame
+import time
+
 
 class KnightSightState(Enum):
     CORNER_DETECTION = auto()
@@ -25,6 +27,7 @@ class KnightSight:
         board_size=(8, 8),
         piece_classifier_path=CLASSIFIER_DIR,
         color_classifier_path=COLOR_CLASSIFIER_DIR,
+        include_fps=False,
     ):
         self._classifier = ChessPieceClassifier(
             piece_classifier_path, color_classifier_path
@@ -33,7 +36,7 @@ class KnightSight:
         self._gmm_filter = GMM_filter(history=120)
         self._visual_board = VisualBoard()
         self._subtractor = Subtractor()
-        self._chess_bot = ChessBot("stockfish/stockfish-android-armv8")
+        self._chess_bot = ChessBot(STOCKFISH_PATH)
         self._kalman = KalmanFilter()
         self._board_size = board_size
         self._hand_threshold = hand_threshold
@@ -42,6 +45,7 @@ class KnightSight:
         self._threshold = hand_threshold
         self._piece2int = {piece: i + 1 for i, piece in enumerate(PIECE_TYPES)}
         self._objects_present = False
+        self._include_fps = include_fps
 
     @property
     def classifier(self):
@@ -82,6 +86,9 @@ class KnightSight:
             temp_board_state = self.labels2board(labels)
             temp_board = VisualBoard()
             temp_board.set_initial_state(temp_board_state)
+            print(
+                {j: i + 1 for i, j in self._classifier._label_piece_conversion.items()}
+            )
             print(temp_board)
 
             all_correct = input("Is the board correct? (y/n) ")
@@ -98,21 +105,27 @@ class KnightSight:
                 int_piece = self.piece_and_color_to_int(piece, color)
 
                 temp_board.replace_piece(int(row), int(col), int_piece)
+                print(
+                    {
+                        j: i + 1
+                        for i, j in self._classifier._label_piece_conversion.items()
+                    }
+                )
                 print(temp_board)
                 all_correct = input("Is the board correct? (y/n) ")
 
             self._visual_board.set_initial_state(temp_board.state)
         else:
             default_board = [
-            [-4, -2, -3, -5, -6, -3, -2, -4],
-            [-1, -1, -1, -1, -1, -1, -1, -1],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 1, 1, 1, 1, 1, 1],
-            [4, 2, 3, 5, 6, 3, 2, 4],
-        ]
+                [-4, -2, -3, -5, -6, -3, -2, -4],
+                [-1, -1, -1, -1, -1, -1, -1, -1],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 1, 1, 1, 1, 1, 1, 1],
+                [4, 2, 3, 5, 6, 3, 2, 4],
+            ]
             self._visual_board.set_initial_state(default_board)
 
     def labels2board(self, labels):
@@ -138,7 +151,7 @@ class KnightSight:
         return int_piece
 
     def corner_detection(self, img):
-        _, grid = find_chessboard_corners(img, sigma=1.2)
+        _, grid = find_chessboard_corners(img, sigma=1.5)
         warped_img, M = warp_chessboard_image(img, grid)
         ideal_grid = get_ideal_grid(self._board_size)
         self._corners = unwarp_points(ideal_grid, M)
@@ -147,6 +160,8 @@ class KnightSight:
         return new_warped_img
 
     def process_frame(self, img):
+        if self._include_fps:
+            start_time = time.time()
         if self._corners is None:
             warped_img = self.corner_detection(img)
         else:
@@ -155,7 +170,6 @@ class KnightSight:
             self._objects_present = self.check_for_objects(warped_masked_img)
         # show_image(warped_masked_img)
         draw_img = img.copy()
-        
 
         if self._state == KnightSightState.HAND:
             if not self._objects_present:
@@ -174,12 +188,12 @@ class KnightSight:
 
         if self._state == KnightSightState.CORNER_DETECTION:
             self._kalman.clear()
-            self._gmm_filter = GMM_filter(history = 100)
-             
+            self._gmm_filter = GMM_filter(history=100)
+
             warped_img = self.corner_detection(img)
             difference = self._subtractor.subtract(warped_img)
             if difference is not None:
-                show_image(difference)
+                # show_image(difference)
                 square_diffs = split_image_into_squares(difference, self._board_size)
                 moved_squares = self._subtractor.identify_moved_squares(square_diffs)
                 if moved_squares is not None:
@@ -195,7 +209,6 @@ class KnightSight:
                         )
                     )
                     self._visual_board.confirm_move()
-                    print(self._visual_board)
 
             warped_masked_img = self._gmm_filter.apply(warped_img)
 
@@ -209,13 +222,13 @@ class KnightSight:
 
             if self._kalman._track_window is None:
                 erosions = 1
-                
+
                 warped_masked_img_copy = warped_masked_img.copy()
-                
+
                 for _ in range(erosions):
                     warped_masked_img_copy = cv2.erode(warped_masked_img_copy, None)
 
-                if self.check_for_objects(warped_masked_img_copy):
+                if self.check_for_objects(warped_masked_img_copy, threshold=30000):
                     self._kalman.initialize(warped_img, warped_masked_img)
             else:
                 points, prediction = self._kalman.predict(warped_img)
@@ -233,6 +246,19 @@ class KnightSight:
                     )
 
         draw_img = self.draw_points_on_frame(self._corners, draw_img)
+        if self._include_fps:
+            end_time = time.time()
+            fps = 1 / (end_time - start_time)
+            cv2.putText(
+                draw_img,
+                f"FPS: {fps:.2f}",
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255, 0, 0),
+                2,
+                cv2.LINE_AA,
+            )
         cv2.imshow("Tracking", draw_img)
         # cv2.waitKey(10)
 
@@ -251,12 +277,14 @@ class KnightSight:
         # cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
         return frame
 
-    def check_for_objects(self, img):
+    def check_for_objects(self, img, threshold=None):
+        if threshold is None:
+            threshold = self._threshold
         if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             # img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]
         # print(sum(sum(img)))
-        return sum(sum(img)) > self._threshold
+        return sum(sum(img)) > threshold
 
 
 def main(image, video):
@@ -271,21 +299,25 @@ def draw_board(board):
     for row in range(8):
         for col in range(8):
             color = (255, 255, 255) if (row + col) % 2 == 0 else (125, 135, 150)
-            pygame.draw.rect(screen, color, (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE))
+            pygame.draw.rect(
+                screen,
+                color,
+                (col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE),
+            )
             piece = board.state[row][col]
             if piece:
                 piece_image = pieces_images.get(piece)
                 screen.blit(piece_image, (col * SQUARE_SIZE, row * SQUARE_SIZE))
 
+
 if __name__ == "__main__":
     print("Starting KnightSight...")
-    knight_sight = KnightSight()
+    knight_sight = KnightSight(include_fps=True)
     # Initialize the camera
     print("Place the camera pointing to the chessboard")
 
-    first_frame = load_images("data/photos/extra")[0]
+    first_frame = load_images("data/unlabeled_data/*")[0]
     video = load_video("data/test_video2.mp4")
-
 
     knight_sight.initialise_first_frame(first_frame, override=True)
 
@@ -299,18 +331,18 @@ if __name__ == "__main__":
 
     # Load images for pieces
     pieces_images = {
-    1: pygame.image.load("data/Piezas/wp.png"),
-    2: pygame.image.load("data/Piezas/wn.png"),
-    3: pygame.image.load("data/Piezas/wb.png"),
-    4: pygame.image.load("data/Piezas/wr.png"),
-    5: pygame.image.load("data/Piezas/wq.png"),
-    6: pygame.image.load("data/Piezas/wk.png"),
-    -1: pygame.image.load("data/Piezas/bp.png"),
-    -2: pygame.image.load("data/Piezas/bn.png"),
-    -3: pygame.image.load("data/Piezas/bb.png"),
-    -4: pygame.image.load("data/Piezas/br.png"),
-    -5: pygame.image.load("data/Piezas/bq.png"),
-    -6: pygame.image.load("data/Piezas/bk.png")
+        1: pygame.image.load("data/Piezas/wp.png"),
+        2: pygame.image.load("data/Piezas/wn.png"),
+        3: pygame.image.load("data/Piezas/wb.png"),
+        4: pygame.image.load("data/Piezas/wr.png"),
+        5: pygame.image.load("data/Piezas/wq.png"),
+        6: pygame.image.load("data/Piezas/wk.png"),
+        -1: pygame.image.load("data/Piezas/bp.png"),
+        -2: pygame.image.load("data/Piezas/bn.png"),
+        -3: pygame.image.load("data/Piezas/bb.png"),
+        -4: pygame.image.load("data/Piezas/br.png"),
+        -5: pygame.image.load("data/Piezas/bq.png"),
+        -6: pygame.image.load("data/Piezas/bk.png"),
     }
 
     for key, image in pieces_images.items():
@@ -327,7 +359,7 @@ if __name__ == "__main__":
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             break
-        
+
         # frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         # cv2.imshow("frames", frame)
 
@@ -336,4 +368,3 @@ if __name__ == "__main__":
         pygame.display.flip()
 
     cv2.destroyAllWindows()
-
