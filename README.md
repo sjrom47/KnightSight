@@ -85,7 +85,10 @@ python src/Knightsight.py
    * Begin playing chess - the system will automatically detect and validate moves (not advised for weaker systems. In this case you can load a video and let it process)
   
 This is a demo on a Raspberry Pi 5:
-https://github.com/sjrom47/KnightSight/assets/test_video.mp4
+
+https://github.com/user-attachments/assets/4a043cff-a562-4882-812d-d6377463e459
+
+
 
 ## Future Developments 🔮
 - AI opponent integration with adjustable difficulty using Stockfish
