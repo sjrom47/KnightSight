@@ -38,6 +38,7 @@ class VisualBoard:
         end_row, end_col = end
         self._temp_state[end_row][end_col] = self._state[start_row][start_col]
         self._temp_state[start_row][start_col] = 0
+        return end_ind
 
     def confirm_move(self):
         self._state = self._temp_state

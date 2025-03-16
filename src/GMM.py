@@ -13,6 +13,13 @@ class GMM_filter:
             detectShadows=self._detectShadows,
         )
 
+    def reset(self):
+        self._mog2 = cv2.createBackgroundSubtractorMOG2(
+            history=self._history,
+            varThreshold=self._varThreshold,
+            detectShadows=self._detectShadows,
+        )
+
     @property
     def mog_params(self):
         return {

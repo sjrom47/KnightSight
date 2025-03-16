@@ -46,7 +46,7 @@ class KalmanFilter:
 
     def initialize(self, frame, mog_frame):
         x, y, w, h = self.get_bounding_box(mog_frame)
-        if w * h < 1000 or w * h > 200000:
+        if w * h < 1000 or w * h > 300000:
             return
         self._track_window = (x, y, w, h)
         cx = int(x + w / 2)
