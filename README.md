@@ -89,7 +89,9 @@ python src/Knightsight.py
 This is a demo on a Raspberry Pi 5:
 
 
-https://github.com/user-attachments/assets/f73265fd-510e-4c40-b08c-ab0a8d14b0df
+https://github.com/user-attachments/assets/41d1d9d5-c107-4327-82b5-b08002f50cd1
+
+
 
 
 
