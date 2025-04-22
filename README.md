@@ -1,4 +1,5 @@
 # Knightsight: Computer Vision Chess Movement Detection 🎥♟️
+https://github.com/user-attachments/assets/41d1d9d5-c107-4327-82b5-b08002f50cd1
 
 Knightsight is a computer vision project developed to detect and analyze chess movements in real-time, created as part of the Computer Vision course.
 
@@ -86,10 +87,9 @@ python src/Knightsight.py
    * Position the camera above the chessboard
    * Begin playing chess - the system will automatically detect and validate moves (not advised for weaker systems. In this case you can load a video and let it process)
   
-This is a demo on a Raspberry Pi 5:
 
 
-https://github.com/user-attachments/assets/41d1d9d5-c107-4327-82b5-b08002f50cd1
+
 
 
 
